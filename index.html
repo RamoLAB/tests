@@ -428,6 +428,14 @@
     function update() {
         if (!isHost) return;
 
+        if (shakeTimer > 0) {
+            shakeTimer--;
+            if (shakeTimer === 15 && eliminationPending) {
+                executeElimination();
+                eliminationPending = false;
+            }
+        }
+
         if (!gameActive) {
              players.forEach(p => { if(p.dying) updateDying(p); });
              updateFallingBlocks();
@@ -602,13 +610,6 @@
         ctx.save();
         if (shakeTimer > 0) {
             ctx.translate((Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20);
-            if (isHost) {
-                shakeTimer--;
-                if(shakeTimer === 15 && eliminationPending) {
-                    executeElimination();
-                    eliminationPending = false;
-                }
-            }
         }
         
         for (let key in world) {
