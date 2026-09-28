@@ -1,731 +1,653 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CyberHex: Quantum Warfare</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            orbitron: ['Orbitron', 'sans-serif'],
-            rajdhani: ['Rajdhani', 'sans-serif'],
-          },
-          colors: {
-            cyber: {
-              bg: '#050811',
-              card: '#0d1322',
-              border: '#1e293b',
-              p1: '#00f0ff',
-              p1dark: '#008b94',
-              p2: '#ff0055',
-              p2dark: '#990033',
-              accent: '#7000ff'
-            }
-          }
-        }
-      }
-    }
-  </script>
-  <style>
-    body {
-      background-color: #050811;
-      background-image: 
-        radial-gradient(circle at 50% 0%, rgba(112, 0, 255, 0.15), transparent 70%),
-        radial-gradient(circle at 0% 100%, rgba(0, 240, 255, 0.08), transparent 50%);
-      color: #f1f5f9;
-      font-family: 'Rajdhani', sans-serif;
-      overflow-x: hidden;
-      user-select: none;
-    }
-    .neon-text-p1 { text-shadow: 0 0 10px rgba(0, 240, 255, 0.7); }
-    .neon-text-p2 { text-shadow: 0 0 10px rgba(ff, 0, 85, 0.7); }
-    .glass-panel {
-      background: rgba(13, 19, 34, 0.75);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-    }
-    .hex-canvas { cursor: pointer; filter: drop-shadow(0 0 15px rgba(0, 240, 255, 0.15)); }
-  </style>
+    <title>Micro Craft 2D - Survival</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background: #87CEEB; font-family: 'Courier New', Courier, monospace; }
+        canvas { display: block; }
+        #ui { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6); color: white; padding: 10px; border-radius: 5px; pointer-events: none; display: none; }
+        #resetBtn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px 40px; font-size: 20px; cursor: pointer; display: none; background: #333; color: white; border: 2px solid white; border-radius: 10px; pointer-events: auto; }
+        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: white; padding: 20px; border-radius: 10px; text-align: center; border: 2px solid white; }
+        #menu button, #menu input { padding: 10px; font-size: 16px; margin: 5px; cursor: pointer; }
+        #menu input { cursor: text; text-align: center; }
+    </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-between p-2 md:p-6">
-
-  <!-- Cabeçalho -->
-  <header class="w-full max-w-4xl flex items-center justify-between mb-4 glass-panel p-4 rounded-xl border-cyan-500/30">
-    <div class="flex items-center space-x-3">
-      <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-600 flex items-center justify-center font-orbitron font-black text-xl text-black shadow-lg shadow-cyan-500/20">
-        HX
-      </div>
-      <div>
-        <h1 class="font-orbitron font-black text-xl md:text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-300 to-fuchsia-500">
-          CYBERHEX
-        </h1>
-        <p class="text-xs text-slate-400 tracking-widest uppercase">Quantum Warfare P2P</p>
-      </div>
+<body>
+<div id="menu">
+    <h2>MICRO CRAFT SURVIVAL - P2P</h2>
+    <div id="setupStep">
+        <label>Quantidade de Jogadores:</label><br>
+        <button onclick="setMaxPlayers(2)">2 Jogadores</button>
+        <button onclick="setMaxPlayers(3)">3 Jogadores</button>
+        <button onclick="setMaxPlayers(4)">4 Jogadores</button>
     </div>
-    
-    <div class="flex items-center space-x-2 text-xs font-orbitron">
-      <div id="status-badge" class="px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span>
-        <span id="status-text">AGUARDANDO CONEXÃO</span>
-      </div>
+    <div id="roomStep" style="display:none;">
+        <p>Jogadores selecionados: <b id="maxPCount"></b></p>
+        <button onclick="createRoom()">Criar Sala</button><br><br>
+        OU<br><br>
+        <input type="text" id="joinIdInput" placeholder="Cole o ID do Host"><br>
+        <button onclick="joinRoom()">Entrar em Sala</button>
     </div>
-  </header>
-
-  <!-- Painel de Conexão (Lobby) -->
-  <section id="lobby-panel" class="w-full max-w-xl glass-panel p-6 rounded-2xl border-indigo-500/30 mb-6 transition-all duration-300">
-    <div class="text-center mb-6">
-      <h2 class="font-orbitron font-bold text-lg text-cyan-400 mb-1">Painel de Sinalização P2P</h2>
-      <p class="text-sm text-slate-400">Conecte-se diretamente a outro jogador sem intermediários.</p>
+    <div id="statusStep" style="display:none;">
+        <p id="statusMsg">Aguardando conexões...</p>
+        <p id="roomCodeArea" style="display:none;">ID da Sala: <b id="roomCode"></b></p>
     </div>
+</div>
 
-    <!-- Mensagem de Erro Alerta -->
-    <div id="error-alert" class="hidden mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/50 text-red-200 text-sm flex items-center justify-between">
-      <span id="error-alert-msg">Oponente não encontrado ou indisponível.</span>
-      <button onclick="hideError()" class="text-red-400 hover:text-white font-bold ml-2">✕</button>
-    </div>
+<div id="ui">
+    <b>MICRO CRAFT SURVIVAL</b><br>
+    Controles: WASD ou Setas<br>
+    Minerar: Botão Esq. | Construir: Botão Dir.<br>
+    Tempo p/ Eliminação: <span id="timer">30</span>s<br>
+    <span id="invList"></span>
+</div>
+<button id="resetBtn" onclick="resetGame()">REINICIAR PARTIDA</button>
+<canvas id="c"></canvas>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-      <!-- Meu ID -->
-      <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
-        <span class="text-xs text-slate-400 font-orbitron uppercase mb-1">Seu ID de Conexão</span>
-        <div class="flex items-center justify-between gap-2">
-          <span id="my-id-display" class="font-mono text-sm text-cyan-300 truncate">Gerando ID...</span>
-          <button onclick="copyMyId()" class="px-2 py-1 bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 border border-cyan-500/40 rounded text-xs transition">
-            Copiar
-          </button>
-        </div>
-      </div>
-
-      <!-- Conectar a outro ID -->
-      <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
-        <span class="text-xs text-slate-400 font-orbitron uppercase mb-1">ID do Oponente</span>
-        <div class="flex gap-2">
-          <input type="text" id="target-peer-id" placeholder="Cole o ID aqui" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
-          <button id="connect-btn" onclick="connectToPeer()" class="px-3 py-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-bold font-orbitron rounded text-xs transition shadow-lg shadow-cyan-500/20">
-            Conectar
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="flex items-center justify-between border-t border-slate-800 pt-4">
-      <button onclick="startAiGame()" class="w-full py-2.5 bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/40 font-orbitron font-semibold rounded-xl text-sm transition flex items-center justify-center gap-2">
-        <span>🤖</span> Jogar Offline contra a IA Tática
-      </button>
-    </div>
-  </section>
-
-  <!-- Área Principal de Jogo -->
-  <main id="game-container" class="w-full max-w-4xl flex flex-col lg:flex-row items-center justify-center gap-6 my-auto">
-    
-    <!-- Painel Lateral / HUD P1 -->
-    <div class="w-full lg:w-48 glass-panel p-4 rounded-xl flex flex-row lg:flex-col justify-between items-center gap-4 border-cyan-500/30">
-      <div class="flex items-center lg:flex-col gap-3 text-left lg:text-center">
-        <div class="w-12 h-12 rounded-full border-2 border-cyan-400 bg-cyan-950/50 flex items-center justify-center text-cyan-400 font-orbitron font-bold text-lg neon-text-p1">
-          P1
-        </div>
-        <div>
-          <h3 id="p1-name" class="font-orbitron font-bold text-cyan-300 text-sm">Jogador 1</h3>
-          <p class="text-xs text-slate-400">Azul Neon</p>
-        </div>
-      </div>
-
-      <div class="text-right lg:text-center">
-        <span class="text-xs text-slate-400 font-orbitron uppercase">Células</span>
-        <div id="p1-score" class="font-orbitron font-black text-3xl text-cyan-400">1</div>
-      </div>
-    </div>
-
-    <!-- Canvas Central do Tabuleiro -->
-    <div class="relative flex flex-col items-center">
-      <!-- Indicador do Turno -->
-      <div id="turn-banner" class="mb-3 px-6 py-1.5 rounded-full glass-panel border border-cyan-500/40 text-center font-orbitron font-bold text-sm tracking-wider text-cyan-300 shadow-lg">
-        SUA VEZ DE JOGAR
-      </div>
-
-      <!-- Canvas Hexagonal -->
-      <canvas id="hex-canvas" width="480" height="420" class="hex-canvas rounded-2xl glass-panel border-2 border-slate-800"></canvas>
-
-      <!-- Seletor de Tipo de Nó -->
-      <div class="mt-4 flex gap-2 glass-panel p-2 rounded-xl border-slate-800">
-        <button onclick="selectNodeType('generator')" id="btn-node-generator" class="node-select-btn active px-3 py-1.5 rounded-lg text-xs font-orbitron flex items-center gap-1.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/50">
-          <span>⚡</span> Gerador
-        </button>
-        <button onclick="selectNodeType('shield')" id="btn-node-shield" class="node-select-btn px-3 py-1.5 rounded-lg text-xs font-orbitron flex items-center gap-1.5 bg-slate-800 text-slate-400 border border-slate-700">
-          <span>🛡️</span> Escudo
-        </button>
-        <button onclick="selectNodeType('disruptor')" id="btn-node-disruptor" class="node-select-btn px-3 py-1.5 rounded-lg text-xs font-orbitron flex items-center gap-1.5 bg-slate-800 text-slate-400 border border-slate-700">
-          <span>💥</span> Disruptor
-        </button>
-      </div>
-    </div>
-
-    <!-- Painel Lateral / HUD P2 -->
-    <div class="w-full lg:w-48 glass-panel p-4 rounded-xl flex flex-row lg:flex-col justify-between items-center gap-4 border-fuchsia-500/30">
-      <div class="flex items-center lg:flex-col gap-3 text-left lg:text-center">
-        <div class="w-12 h-12 rounded-full border-2 border-fuchsia-500 bg-fuchsia-950/50 flex items-center justify-center text-fuchsia-400 font-orbitron font-bold text-lg neon-text-p2">
-          P2
-        </div>
-        <div>
-          <h3 id="p2-name" class="font-orbitron font-bold text-fuchsia-300 text-sm">Oponente</h3>
-          <p class="text-xs text-slate-400">Rosa Neon</p>
-        </div>
-      </div>
-
-      <div class="text-right lg:text-center">
-        <span class="text-xs text-slate-400 font-orbitron uppercase">Células</span>
-        <div id="p2-score" class="font-orbitron font-black text-3xl text-fuchsia-400">1</div>
-      </div>
-    </div>
-
-  </main>
-
-  <!-- Feed do Registro de Batalha -->
-  <footer class="w-full max-w-4xl mt-6 glass-panel p-3 rounded-xl border-slate-800 text-xs font-mono text-slate-400 flex items-center justify-between">
-    <div class="flex items-center gap-2 overflow-hidden">
-      <span class="text-cyan-400 font-bold font-orbitron">[LOG]:</span>
-      <span id="battle-log" class="truncate">Aguardando início do confronto estratégico...</span>
-    </div>
-    <button onclick="toggleAudio()" id="audio-btn" class="text-slate-400 hover:text-cyan-300 text-sm ml-2">🔊 Som: ON</button>
-  </footer>
-
-  <script>
-    /* ==========================================================================
-       1. SISTEMA DE ÁUDIO SINTETIZADO (NATIVO WEB AUDIO API)
-       ========================================================================== */
-    let audioCtx = null;
-    let audioEnabled = true;
-
-    function initAudio() {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-    }
-
-    function toggleAudio() {
-      audioEnabled = !audioEnabled;
-      document.getElementById('audio-btn').innerText = audioEnabled ? "🔊 Som: ON" : "🔇 Som: OFF";
-    }
-
-    function playSound(type) {
-      if (!audioEnabled) return;
-      initAudio();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-
-      const now = audioCtx.currentTime;
-
-      if (type === 'click') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(600, now);
-        osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
-        gain.gain.setValueAtTime(0.2, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-        osc.start(now);
-        osc.stop(now + 0.05);
-      } else if (type === 'place') {
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(150, now);
-        osc.frequency.exponentialRampToValueAtTime(450, now + 0.15);
-        gain.gain.setValueAtTime(0.3, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-        osc.start(now);
-        osc.stop(now + 0.15);
-      } else if (type === 'capture') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(300, now);
-        osc.frequency.linearRampToValueAtTime(800, now + 0.2);
-        gain.gain.setValueAtTime(0.25, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-        osc.start(now);
-        osc.stop(now + 0.2);
-      } else if (type === 'win') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(400, now);
-        osc.frequency.setValueAtTime(600, now + 0.1);
-        osc.frequency.setValueAtTime(900, now + 0.2);
-        gain.gain.setValueAtTime(0.3, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-        osc.start(now);
-        osc.stop(now + 0.5);
-      }
-    }
-
-    /* ==========================================================================
-       2. GERENCIAMENTO P2P COM PEERJS & RESOLUÇÃO DE ERROS
-       ========================================================================== */
-    let peer = null;
-    let conn = null;
-    let myRole = 'p1'; // 'p1' (Host), 'p2' (Convidado), ou 'ai'
-    let isMyTurn = false;
-    let isAiGame = false;
-    let selectedNodeType = 'generator';
-
-    // Configuração com servidores STUN públicos da Google para garantir transpassamento NAT
-    const peerConfig = {
-      config: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' }
-        ]
-      }
-    };
-
-    function initPeer() {
-      peer = new Peer(peerConfig);
-
-      peer.on('open', (id) => {
-        document.getElementById('my-id-display').innerText = id;
-        logBattle("ID P2P gerado com sucesso. Pronto para conectar.");
-
-        // Checar se veio com link de convite (?join=PEER_ID)
-        const urlParams = new URLSearchParams(window.location.search);
-        const joinId = urlParams.get('join');
-        if (joinId) {
-          document.getElementById('target-peer-id').value = joinId;
-          setTimeout(() => connectToPeer(), 500);
-        }
-      });
-
-      // Receber Conexão Entrante (Você é o Host = P1)
-      peer.on('connection', (c) => {
-        conn = c;
-        myRole = 'p1';
-        isMyTurn = true;
-        setupConnection("Conexão estabelecida! Você é o P1 (Primeiro a Jogar).");
-      });
-
-      // Tratamento Completo do Erro 'peer-unavailable' e Falhas de Rede
-      peer.on('error', (err) => {
-        console.error("Erro no PeerJS:", err.type, err);
-        let msg = "Erro na conexão P2P.";
-
-        if (err.type === 'peer-unavailable') {
-          msg = "Erro: ID do oponente não foi encontrado ou está offline!";
-        } else if (err.type === 'network' || err.type === 'disconnected') {
-          msg = "Erro de rede ao conectar ao servidor de sinalização.";
-        } else if (err.type === 'browser-incompatible') {
-          msg = "Navegador incompatível com WebRTC P2P.";
-        }
-
-        showError(msg);
-        resetConnectionState();
-      });
-
-      peer.on('disconnected', () => {
-        logBattle("Desconectado do servidor. Tentando reconectar...");
-        peer.reconnect();
-      });
-    }
-
-    function connectToPeer() {
-      hideError();
-      const targetId = document.getElementById('target-peer-id').value.trim();
-      if (!targetId) {
-        showError("Digite um ID válido para conectar.");
-        return;
-      }
-
-      logBattle("Tentando conectar a: " + targetId + "...");
-      conn = peer.connect(targetId, { reliable: true });
-      myRole = 'p2';
-      isMyTurn = false;
-
-      conn.on('open', () => {
-        setupConnection("Conectado com sucesso! Você é o P2.");
-      });
-
-      // Aguarda 10 segundos caso a conexão trave sem disparar erro do peer
-      setTimeout(() => {
-        if (conn && !conn.open && !isAiGame) {
-          showError("A conexão demorou muito. Verifique se o ID está correto.");
-          resetConnectionState();
-        }
-      }, 10000);
-    }
-
-    function setupConnection(statusMsg) {
-      document.getElementById('status-badge').className = "px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-2";
-      document.getElementById('status-badge').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> CONECTADO P2P`;
-      
-      document.getElementById('p2-name').innerText = myRole === 'p1' ? "Oponente (P2)" : "Você (P2)";
-      document.getElementById('p1-name').innerText = myRole === 'p1' ? "Você (P1)" : "Anfitrião (P1)";
-
-      logBattle(statusMsg);
-      updateTurnBanner();
-
-      // Escutar mensagens recebidas
-      conn.on('data', (data) => handlePeerData(data));
-      conn.on('close', () => {
-        logBattle("Conexão P2P encerrada pelo oponente.");
-        alert("O oponente se desconectou.");
-        location.reload();
-      });
-    }
-
-    function resetConnectionState() {
-      document.getElementById('status-badge').className = "px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 flex items-center gap-2";
-      document.getElementById('status-badge').innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-400"></span> DESCONECTADO`;
-      conn = null;
-    }
-
-    function showError(msg) {
-      const errBox = document.getElementById('error-alert');
-      document.getElementById('error-alert-msg').innerText = msg;
-      errBox.classList.remove('hidden');
-      logBattle("ERRO: " + msg);
-    }
-
-    function hideError() {
-      document.getElementById('error-alert').classList.add('hidden');
-    }
-
-    function copyMyId() {
-      const idText = document.getElementById('my-id-display').innerText;
-      if (idText.includes("...")) return;
-      
-      const shareUrl = `${window.location.origin}${window.location.pathname}?join=${idText}`;
-      navigator.clipboard.writeText(shareUrl);
-      logBattle("Link direto de convite copiado para a área de transferência!");
-      playSound('click');
-    }
-
-    /* ==========================================================================
-       3. LÓGICA DO JOGO DA VELHA HEXAGONAL (TABULEIRO & CANVAS)
-       ========================================================================== */
-    const canvas = document.getElementById('hex-canvas');
+<script>
+    const canvas = document.getElementById('c');
     const ctx = canvas.getContext('2d');
+    const timerDisp = document.getElementById('timer');
+    const resetBtn = document.getElementById('resetBtn');
+    
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-    const HEX_RADIUS = 36;
-    const BOARD_ROWS = 5;
-    const BOARD_COLS = 5;
-    let hexGrid = [];
+    const blockSize = Math.floor(canvas.width / 35);
+    let world = {};
+    let fallingBlocks = [];
+    let gameActive = false;
+    let globalTimer = 30;
+    let shakeTimer = 0;
+    let eliminationPending = false;
+    let players = [];
+    let startRow = 11;
+    let dangerRowOffset = -3;
 
-    // Estrutura da Célula Hexagonal
-    class HexCell {
-      constructor(q, r, x, y) {
-        this.q = q;
-        this.r = r;
-        this.x = x;
-        this.y = y;
-        this.owner = null; // null, 'p1', 'p2'
-        this.nodeType = null; // 'generator', 'shield', 'disruptor'
-        this.shielded = false;
-      }
+    let camX = canvas.width / 2;
+    let camY = canvas.height / 2;
+    let zoom = 1;
+
+    let peer = null;
+    let myId = null;
+    let myIndex = -1;
+    let isHost = false;
+    let maxPlayers = 2;
+    let connections = [];
+    let hostConn = null;
+    let lastSyncTime = 0;
+
+    const colors = ['#f00', '#00f', '#ff0', '#f0f'];
+    const spawnPositions = [5, 30, 15, 20];
+
+    function setMaxPlayers(num) {
+        maxPlayers = num;
+        document.getElementById('maxPCount').innerText = num;
+        document.getElementById('setupStep').style.display = 'none';
+        document.getElementById('roomStep').style.display = 'block';
     }
 
-    function initBoard() {
-      hexGrid = [];
-      const originX = canvas.width / 2;
-      const originY = canvas.height / 2;
+    function createRoom() {
+        isHost = true;
+        myIndex = 0;
+        document.getElementById('roomStep').style.display = 'none';
+        document.getElementById('statusStep').style.display = 'block';
+        document.getElementById('statusMsg').innerText = "Gerando sala...";
 
-      for (let q = -2; q <= 2; q++) {
-        let r1 = Math.max(-2, -q - 2);
-        let r2 = Math.min(2, -q + 2);
-        for (let r = r1; r <= r2; r++) {
-          let x = originX + HEX_RADIUS * (Math.sqrt(3) * q + Math.sqrt(3)/2 * r);
-          let y = originY + HEX_RADIUS * (3/2 * r);
-          hexGrid.push(new HexCell(q, r, x, y));
+        peer = new Peer();
+        peer.on('open', id => {
+            myId = id;
+            document.getElementById('roomCodeArea').style.display = 'block';
+            document.getElementById('roomCode').innerText = id;
+            document.getElementById('statusMsg').innerText = `Aguardando jogadores (1/${maxPlayers})...`;
+        });
+
+        peer.on('connection', conn => {
+            if (connections.length + 1 >= maxPlayers) {
+                conn.close();
+                return;
+            }
+            connections.push(conn);
+            let playerIdx = connections.length;
+
+            conn.on('open', () => {
+                conn.send({ type: 'init', playerIndex: playerIdx, maxPlayers: maxPlayers });
+                updateHostLobby();
+            });
+
+            conn.on('data', data => handleData(data, playerIdx));
+            conn.on('close', () => {
+                let idx = connections.indexOf(conn);
+                if(idx !== -1) connections.splice(idx, 1);
+            });
+        });
+    }
+
+    function joinRoom() {
+        let hostId = document.getElementById('joinIdInput').value.trim();
+        if(!hostId) return;
+        isHost = false;
+
+        document.getElementById('roomStep').style.display = 'none';
+        document.getElementById('statusStep').style.display = 'block';
+        document.getElementById('statusMsg').innerText = "Conectando à sala...";
+
+        peer = new Peer();
+        peer.on('open', id => {
+            myId = id;
+            hostConn = peer.connect(hostId);
+            hostConn.on('open', () => {
+                document.getElementById('statusMsg').innerText = "Conectado! Aguardando o Host iniciar...";
+            });
+            hostConn.on('data', data => handleData(data, -1));
+        });
+    }
+
+    function updateHostLobby() {
+        let total = connections.length + 1;
+        document.getElementById('statusMsg').innerText = `Aguardando jogadores (${total}/${maxPlayers})...`;
+        if (total === maxPlayers) {
+            startGameAsHost();
         }
-      }
-
-      // Definir posições iniciais dos jogadores
-      const p1Start = hexGrid.find(h => h.q === -2 && h.r === 2);
-      const p2Start = hexGrid.find(h => h.q === 2 && h.r === -2);
-
-      if (p1Start) { p1Start.owner = 'p1'; p1Start.nodeType = 'generator'; }
-      if (p2Start) { p2Start.owner = 'p2'; p2Start.nodeType = 'generator'; }
-
-      drawBoard();
-      updateScores();
     }
 
-    function drawBoard() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      hexGrid.forEach(cell => {
-        drawHexagon(cell.x, cell.y, HEX_RADIUS - 2, cell);
-      });
+    function startGameAsHost() {
+        initGameWorld();
+        let payload = { type: 'start', world, players, startRow, dangerRowOffset };
+        connections.forEach(c => c.send(payload));
+        document.getElementById('menu').style.display = 'none';
+        document.getElementById('ui').style.display = 'block';
+        updateUIInv();
+        gameActive = true;
     }
 
-    function drawHexagon(x, y, radius, cell) {
-      ctx.beginPath();
-      for (let i = 0; i < 6; i++) {
-        const angle = (Math.PI / 180) * (60 * i + 30);
-        const hx = x + radius * Math.cos(angle);
-        const hy = y + radius * Math.sin(angle);
-        if (i === 0) ctx.moveTo(hx, hy);
-        else ctx.lineTo(hx, hy);
-      }
-      ctx.closePath();
+    function initGameWorld() {
+        world = {};
+        fallingBlocks = [];
+        globalTimer = 30;
+        shakeTimer = 0;
+        eliminationPending = false;
+        resetBtn.style.display = 'none';
+        startRow = 11;
+        dangerRowOffset = -3;
 
-      // Preenchimento de Cor base no Dono
-      if (cell.owner === 'p1') {
-        ctx.fillStyle = 'rgba(0, 240, 255, 0.25)';
-        ctx.strokeStyle = '#00f0ff';
-        ctx.lineWidth = 2;
-      } else if (cell.owner === 'p2') {
-        ctx.fillStyle = 'rgba(255, 0, 85, 0.25)';
-        ctx.strokeStyle = '#ff0055';
-        ctx.lineWidth = 2;
-      } else {
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-        ctx.lineWidth = 1;
-      }
-
-      ctx.fill();
-      ctx.stroke();
-
-      // Ícones de Nós Especiais
-      if (cell.nodeType) {
-        ctx.font = '16px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        let icon = '⚡';
-        if (cell.nodeType === 'shield') icon = '🛡️';
-        if (cell.nodeType === 'disruptor') icon = '💥';
-        ctx.fillText(icon, x, y);
-      }
-    }
-
-    // Clique no Canvas
-    canvas.addEventListener('click', (e) => {
-      if (!isMyTurn) {
-        logBattle("Aguarde a sua vez de jogar!");
-        return;
-      }
-
-      const rect = canvas.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
-
-      // Encontrar Célula Clicada
-      const clickedCell = hexGrid.find(cell => {
-        const dist = Math.hypot(cell.x - clickX, cell.y - clickY);
-        return dist < HEX_RADIUS - 2;
-      });
-
-      if (clickedCell) {
-        executeMove(clickedCell, myRole, selectedNodeType);
-      }
-    });
-
-    function executeMove(cell, player, nodeType) {
-      // Regra: Não pode jogar em célula já dominada por você mesmo
-      if (cell.owner === player) return;
-
-      // Regra: Deve ser adjacente a pelo menos uma célula dominada por você
-      const neighbors = getNeighbors(cell);
-      const hasAdjacent = neighbors.some(n => n.owner === player);
-
-      if (!hasAdjacent) {
-        logBattle("Jogada inválida! Você só pode expandir para hexágonos vizinhos.");
-        return;
-      }
-
-      // Executar a jogada
-      cell.owner = player;
-      cell.nodeType = nodeType;
-      playSound('place');
-
-      // Processar Habilidades de Nós
-      if (nodeType === 'generator') {
-        // Converte vizinhos vazios sem dono
-        neighbors.forEach(n => {
-          if (!n.owner) {
-            n.owner = player;
-            playSound('capture');
-          }
-        });
-      } else if (nodeType === 'disruptor') {
-        // Limpa o nó dos vizinhos inimigos
-        neighbors.forEach(n => {
-          if (n.owner && n.owner !== player) {
-            n.owner = null;
-            n.nodeType = null;
-          }
-        });
-      }
-
-      drawBoard();
-      updateScores();
-      checkWinCondition();
-
-      // Transmitir Jogada via P2P
-      if (conn && conn.open) {
-        conn.send({
-          type: 'MOVE',
-          q: cell.q,
-          r: cell.r,
-          nodeType: nodeType,
-          player: player
-        });
-      }
-
-      // Alternar Turno
-      isMyTurn = false;
-      updateTurnBanner();
-
-      // Se for jogo contra IA e o jogador acabou de jogar
-      if (isAiGame && !isMyTurn) {
-        setTimeout(playAiTurn, 600);
-      }
-    }
-
-    function handlePeerData(data) {
-      if (data.type === 'MOVE') {
-        const cell = hexGrid.find(h => h.q === data.q && h.r === data.r);
-        if (cell) {
-          cell.owner = data.player;
-          cell.nodeType = data.nodeType;
-
-          const neighbors = getNeighbors(cell);
-          if (data.nodeType === 'generator') {
-            neighbors.forEach(n => { if (!n.owner) n.owner = data.player; });
-          } else if (data.nodeType === 'disruptor') {
-            neighbors.forEach(n => { if (n.owner && n.owner !== data.player) { n.owner = null; n.nodeType = null; } });
-          }
-
-          drawBoard();
-          updateScores();
-          checkWinCondition();
-
-          isMyTurn = true;
-          updateTurnBanner();
-          playSound('place');
-          logBattle("Oponente realizou uma jogada!");
-        }
-      }
-    }
-
-    function getNeighbors(cell) {
-      const directions = [
-        {q: +1, r: 0}, {q: +1, r: -1}, {q: 0, r: -1},
-        {q: -1, r: 0}, {q: -1, r: +1}, {q: 0, r: +1}
-      ];
-      return directions.map(d => hexGrid.find(h => h.q === cell.q + d.q && h.r === cell.r + d.r)).filter(Boolean);
-    }
-
-    function updateScores() {
-      const p1Score = hexGrid.filter(h => h.owner === 'p1').length;
-      const p2Score = hexGrid.filter(h => h.owner === 'p2').length;
-
-      document.getElementById('p1-score').innerText = p1Score;
-      document.getElementById('p2-score').innerText = p2Score;
-    }
-
-    function checkWinCondition() {
-      const p1Score = hexGrid.filter(h => h.owner === 'p1').length;
-      const p2Score = hexGrid.filter(h => h.owner === 'p2').length;
-      const emptyCells = hexGrid.filter(h => !h.owner).length;
-
-      if (emptyCells === 0 || p1Score === 0 || p2Score === 0) {
-        let winner = p1Score > p2Score ? "Jogador 1 (Azul)" : "Jogador 2 (Rosa)";
-        if (p1Score === p2Score) winner = "Empate!";
-        
-        playSound('win');
-        logBattle(`FIM DE JOGO! Vitória de: ${winner}`);
-        alert(`FIM DE JOGO!\nResultado: ${winner}`);
-      }
-    }
-
-    function updateTurnBanner() {
-      const banner = document.getElementById('turn-banner');
-      if (isMyTurn) {
-        banner.innerText = "SUA VEZ DE JOGAR";
-        banner.className = "mb-3 px-6 py-1.5 rounded-full glass-panel border border-cyan-500/40 text-center font-orbitron font-bold text-sm tracking-wider text-cyan-300 shadow-lg shadow-cyan-500/20";
-      } else {
-        banner.innerText = "VEZ DO OPONENTE...";
-        banner.className = "mb-3 px-6 py-1.5 rounded-full glass-panel border border-fuchsia-500/40 text-center font-orbitron font-bold text-sm tracking-wider text-fuchsia-300 shadow-lg shadow-fuchsia-500/20";
-      }
-    }
-
-    function selectNodeType(type) {
-      selectedNodeType = type;
-      document.querySelectorAll('.node-select-btn').forEach(btn => {
-        btn.className = "node-select-btn px-3 py-1.5 rounded-lg text-xs font-orbitron flex items-center gap-1.5 bg-slate-800 text-slate-400 border border-slate-700";
-      });
-      
-      const activeBtn = document.getElementById(`btn-node-${type}`);
-      activeBtn.className = "node-select-btn active px-3 py-1.5 rounded-lg text-xs font-orbitron flex items-center gap-1.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/50";
-      playSound('click');
-    }
-
-    function logBattle(msg) {
-      document.getElementById('battle-log').innerText = msg;
-    }
-
-    /* ==========================================================================
-       4. MODO OFFLINE CONTRA INTELIGÊNCIA ARTIFICIAL (IA)
-       ========================================================================== */
-    function startAiGame() {
-      isAiGame = true;
-      myRole = 'p1';
-      isMyTurn = true;
-
-      document.getElementById('p2-name').innerText = "IA Tática Bot";
-      document.getElementById('status-badge').className = "px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/30 flex items-center gap-2";
-      document.getElementById('status-badge').innerHTML = `<span class="w-2 h-2 rounded-full bg-purple-400"></span> MODO IA OFFLINE`;
-
-      logBattle("Partida contra a IA Tática iniciada. Faça a sua jogada.");
-      updateTurnBanner();
-    }
-
-    function playAiTurn() {
-      if (!isAiGame || isMyTurn) return;
-
-      // Encontrar todas as células válidas para a IA (adjacentes às células da IA = 'p2')
-      const validCells = hexGrid.filter(cell => {
-        if (cell.owner === 'p2') return false;
-        const neighbors = getNeighbors(cell);
-        return neighbors.some(n => n.owner === 'p2');
-      });
-
-      if (validCells.length > 0) {
-        // Escolher uma célula aleatória e um nó tático
-        const targetCell = validCells[Math.floor(Math.random() * validCells.length)];
-        const types = ['generator', 'shield', 'disruptor'];
-        const randomType = types[Math.floor(Math.random() * types.length)];
-
-        targetCell.owner = 'p2';
-        targetCell.nodeType = randomType;
-
-        const neighbors = getNeighbors(targetCell);
-        if (randomType === 'generator') {
-          neighbors.forEach(n => { if (!n.owner) n.owner = 'p2'; });
-        } else if (randomType === 'disruptor') {
-          neighbors.forEach(n => { if (n.owner && n.owner !== 'p2') { n.owner = null; n.nodeType = null; } });
+        for(let r = 0; r < 3; r++) {
+            for(let x = 1; x < 35; x++) {
+                world[`${x},${startRow + r}`] = r === 0 ? '#3a3' : (r === 1 ? '#753' : '#555');
+            }
         }
 
-        drawBoard();
-        updateScores();
-        checkWinCondition();
+        players = [];
+        for(let i = 0; i < maxPlayers; i++) {
+            players.push(createPlayer(i, blockSize * spawnPositions[i], (startRow - 2) * blockSize, colors[i]));
+        }
 
-        playSound('place');
-        logBattle("IA Tática realizou um movimento.");
-      }
-
-      isMyTurn = true;
-      updateTurnBanner();
+        camX = canvas.width / 2;
+        camY = (startRow * blockSize);
+        zoom = 1;
     }
 
-    // Inicialização ao carregar a página
-    window.onload = () => {
-      initPeer();
-      initBoard();
+    function createPlayer(id, x, y, color) {
+        return {
+            id, x, y, color, isAI: false,
+            w: blockSize * 0.7,
+            h: blockSize * 1.2,
+            vx: 0, vy: 0,
+            inventory: 0,
+            alive: true, dying: false,
+            isGrounded: false, isCrouching: false,
+            squash: 1, stretch: 1,
+            targetSquash: 1, targetStretch: 1,
+            angle: 0
+        };
+    }
+
+    function updateUIInv() {
+        let html = "";
+        players.forEach(p => {
+            html += `P${p.id + 1} Inv: <span id="inv${p.id}">${p.inventory}</span> `;
+        });
+        document.getElementById('invList').innerHTML = html;
+    }
+
+    function handleData(data, fromIdx) {
+        if (data.type === 'init') {
+            myIndex = data.playerIndex;
+            maxPlayers = data.maxPlayers;
+        } else if (data.type === 'start') {
+            world = data.world;
+            players = data.players;
+            startRow = data.startRow;
+            dangerRowOffset = data.dangerRowOffset;
+            document.getElementById('menu').style.display = 'none';
+            document.getElementById('ui').style.display = 'block';
+            updateUIInv();
+            gameActive = true;
+        } else if (data.type === 'input') {
+            if (isHost) {
+                let p = players[fromIdx];
+                if (p) {
+                    p.moveLeft = data.moveLeft;
+                    p.moveRight = data.moveRight;
+                    p.jump = data.jump;
+                    p.crouch = data.crouch;
+                }
+            }
+        } else if (data.type === 'action') {
+            if (isHost) {
+                processClickAction(fromIdx, data.button, data.key);
+            }
+        } else if (data.type === 'sync') {
+            if (!isHost) {
+                players = data.players;
+                globalTimer = data.globalTimer;
+                shakeTimer = data.shakeTimer;
+                gameActive = data.gameActive;
+                fallingBlocks = data.fallingBlocks;
+                timerDisp.innerText = globalTimer;
+                if (!gameActive) {
+                    checkVictoryUI();
+                }
+                players.forEach(p => {
+                    let el = document.getElementById(`inv${p.id}`);
+                    if(el) el.innerText = p.inventory;
+                });
+            }
+        } else if (data.type === 'world') {
+            if (!isHost) {
+                world = data.world;
+                startRow = data.startRow;
+                dangerRowOffset = data.dangerRowOffset;
+            }
+        } else if (data.type === 'reset') {
+            world = data.world;
+            players = data.players;
+            startRow = data.startRow;
+            dangerRowOffset = data.dangerRowOffset;
+            gameActive = true;
+            resetBtn.style.display = 'none';
+            updateUIInv();
+        }
+    }
+
+    const keys = {};
+    window.onkeydown = e => {
+        if (keys[e.code]) return;
+        keys[e.code] = true;
+        sendInputs();
     };
-  </script>
+    window.onkeyup = e => {
+        keys[e.code] = false;
+        sendInputs();
+    };
+
+    function sendInputs() {
+        if (myIndex === -1 || !gameActive) return;
+        let moveLeft = keys['KeyA'] || keys['ArrowLeft'];
+        let moveRight = keys['KeyD'] || keys['ArrowRight'];
+        let jump = keys['KeyW'] || keys['ArrowUp'];
+        let crouch = keys['KeyS'] || keys['ArrowDown'];
+
+        let msg = { type: 'input', moveLeft, moveRight, jump, crouch };
+        if (isHost) {
+            let p = players[myIndex];
+            if (p) {
+                p.moveLeft = moveLeft;
+                p.moveRight = moveRight;
+                p.jump = jump;
+                p.crouch = crouch;
+            }
+        } else if (hostConn) {
+            hostConn.send(msg);
+        }
+    }
+
+    function getActiveRow() {
+        for (let r = 0; r < 100; r++) {
+            let found = false;
+            for (let x = 1; x < 35; x++) {
+                if (world[`${x},${startRow + r}`] && world[`${x},${startRow + r}`] !== '#888') {
+                    found = true;
+                    break;
+                }
+            }
+            if (found) return startRow + r;
+        }
+        return -1;
+    }
+
+    window.onmousedown = e => {
+        if (!gameActive || myIndex === -1) return;
+        
+        let worldX = (e.clientX - canvas.width / 2) / zoom + camX;
+        let worldY = (e.clientY - canvas.height / 2) / zoom + camY;
+        
+        let wx = Math.floor(worldX / blockSize);
+        let wy = Math.floor(worldY / blockSize);
+        let key = `${wx},${wy}`;
+
+        if (isHost) {
+            processClickAction(myIndex, e.button, key);
+        } else if (hostConn) {
+            hostConn.send({ type: 'action', button: e.button, key });
+        }
+    };
+
+    function broadcastWorld() {
+        if (!isHost) return;
+        let data = { type: 'world', world, startRow, dangerRowOffset };
+        connections.forEach(c => c.send(data));
+    }
+
+    function processClickAction(pIdx, button, key) {
+        let p = players[pIdx];
+        if (!p || !p.alive || p.dying) return;
+
+        let activeRowY = getActiveRow();
+
+        if (button === 2) {
+            if (p.inventory > 0 && !world[key]) {
+                world[key] = '#888';
+                p.inventory--;
+                broadcastWorld();
+            }
+        } else if (button === 0) {
+            if (world[key] && (parseInt(key.split(',')[1]) === activeRowY || world[key] === '#888')) {
+                delete world[key];
+                p.inventory++;
+                broadcastWorld();
+            }
+        }
+    }
+
+    window.oncontextmenu = e => e.preventDefault();
+
+    setInterval(() => {
+        if (!gameActive || !isHost) return;
+        globalTimer--;
+        if (globalTimer <= 0) {
+            shakeTimer = 40; 
+            eliminationPending = true;
+            globalTimer = 30;
+        }
+        timerDisp.innerText = globalTimer;
+    }, 1000);
+
+    function executeElimination() {
+        let activeRow = getActiveRow();
+        let dangerY = (activeRow + dangerRowOffset) * blockSize;
+        
+        players.forEach(p => {
+            if (p.alive && !p.dying && (p.y + p.h) >= dangerY) {
+                p.dying = true;
+                p.vx = (Math.random() - 0.5) * 10;
+                p.vy = -5;
+            }
+        });
+
+        let newWorld = {};
+        for (let key in world) {
+            let [x, y] = key.split(',').map(Number);
+            if (world[key] === '#888') {
+                fallingBlocks.push({ x: x * blockSize, y: y * blockSize, vy: 0, color: '#888' });
+            } else {
+                newWorld[`${x},${y + 1}`] = world[key];
+            }
+        }
+        world = newWorld;
+        startRow++;
+        dangerRowOffset -= 3;
+        players.forEach(p => { if (p.alive && !p.dying) p.y += blockSize; });
+        checkVictory();
+        broadcastWorld();
+    }
+
+    function checkVictory() {
+        let alive = players.filter(p => p.alive && !p.dying);
+        if (alive.length <= 1) {
+            gameActive = false;
+            checkVictoryUI();
+        }
+    }
+
+    function checkVictoryUI() {
+        if (isHost) {
+            resetBtn.style.display = 'block';
+        }
+    }
+
+    function resetGame() {
+        if (!isHost) return;
+        initGameWorld();
+        gameActive = true;
+        let payload = { type: 'reset', world, players, startRow, dangerRowOffset };
+        connections.forEach(c => c.send(payload));
+    }
+
+    function update() {
+        if (!isHost) return;
+
+        if (!gameActive) {
+             players.forEach(p => { if(p.dying) updateDying(p); });
+             updateFallingBlocks();
+             broadcastSync();
+             return;
+        }
+
+        updateFallingBlocks();
+
+        let activeRowY = getActiveRow();
+        let changedColor = false;
+        if (activeRowY !== -1) {
+            for (let x = 1; x < 35; x++) {
+                if (world[`${x},${activeRowY}`] && world[`${x},${activeRowY}`] !== '#888' && world[`${x},${activeRowY}`] !== '#3a3') {
+                    world[`${x},${activeRowY}`] = '#3a3';
+                    changedColor = true;
+                }
+            }
+        }
+        if (changedColor) broadcastWorld();
+
+        players.forEach(p => {
+            if (!p.alive) return;
+            if (p.dying) { updateDying(p); return; }
+
+            p.isCrouching = p.crouch && p.isGrounded;
+
+            let speed = 5;
+            if (p.isCrouching) speed *= 0.4;
+
+            if (p.moveLeft) p.vx = -speed;
+            else if (p.moveRight) p.vx = speed;
+            else p.vx *= 0.8;
+
+            if (p.jump && p.isGrounded && !p.isCrouching) {
+                p.vy = -12;
+                p.isGrounded = false;
+            }
+
+            p.vy += 0.6;
+
+            let nextX = p.x + p.vx;
+            let nextY = p.y + p.vy;
+
+            let gridX = Math.floor((nextX + p.w / 2) / blockSize);
+            let gridY = Math.floor((nextY + p.h) / blockSize);
+
+            if (world[`${gridX},${gridY}`]) {
+                p.vy = 0;
+                p.y = (gridY * blockSize) - p.h;
+                p.isGrounded = true;
+            } else {
+                p.y = nextY;
+                p.isGrounded = false;
+            }
+            p.x = Math.max(-blockSize * 10, Math.min(canvas.width + blockSize * 10, nextX));
+
+            if (p.isCrouching) {
+                p.targetSquash = 0.5;
+                p.targetStretch = 1.6;
+            } else {
+                p.targetSquash = 1;
+                p.targetStretch = 1;
+            }
+
+            p.squash += (p.targetSquash - p.squash) * 0.2;
+            p.stretch += (p.targetStretch - p.stretch) * 0.2;
+            p.angle = p.vx * 0.05;
+
+            if (p.y > canvas.height + 1000) {
+                p.alive = false;
+                checkVictory();
+            }
+        });
+
+        broadcastSync();
+    }
+
+    function broadcastSync() {
+        let now = Date.now();
+        if (now - lastSyncTime < 15) return;
+        lastSyncTime = now;
+
+        let data = {
+            type: 'sync',
+            players,
+            globalTimer,
+            shakeTimer,
+            gameActive,
+            fallingBlocks
+        };
+        connections.forEach(c => c.send(data));
+        players.forEach(p => {
+            let el = document.getElementById(`inv${p.id}`);
+            if(el) el.innerText = p.inventory;
+        });
+    }
+
+    function updateDying(p) {
+        p.angle += 0.2;
+        p.vy += 0.5;
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.y > canvas.height + 1000) p.alive = false;
+    }
+
+    function updateFallingBlocks() {
+        for (let i = fallingBlocks.length - 1; i >= 0; i--) {
+            let b = fallingBlocks[i];
+            b.vy += 0.5;
+            b.y += b.vy;
+            if (b.y > canvas.height + 1000) fallingBlocks.splice(i, 1);
+        }
+    }
+
+    function drawSlime(ctx, p) {
+        ctx.save();
+        ctx.translate(p.x + p.w / 2, p.y + p.h);
+        ctx.rotate(p.angle || 0);
+        ctx.scale(p.stretch, p.squash);
+
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(0, -15, p.w * 0.8, Math.PI, 0);
+        ctx.lineTo(p.w * 0.8, 0);
+        ctx.quadraticCurveTo(0, 10, -p.w * 0.8, 0);
+        ctx.fill();
+
+        ctx.fillStyle = "white";
+        let eyeOffset = p.vx * 0.5;
+        let eyeY = p.isCrouching ? -12 : -23;
+        ctx.beginPath();
+        ctx.arc(-p.w * 0.3 + eyeOffset, eyeY, 4, 0, Math.PI * 2);
+        ctx.arc(p.w * 0.3 + eyeOffset, eyeY, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    function draw() {
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        let hasContent = false;
+
+        Object.keys(world).forEach(key => {
+            let [x, y] = key.split(',').map(Number);
+            minX = Math.min(minX, x * blockSize);
+            maxX = Math.max(maxX, (x + 1) * blockSize);
+            minY = Math.min(minY, y * blockSize);
+            maxY = Math.max(maxY, (y + 1) * blockSize);
+            hasContent = true;
+        });
+
+        if (hasContent) {
+            let targetCamX = (minX + maxX) / 2;
+            let targetCamY = (minY + maxY) / 2;
+            let areaW = (maxX - minX) + blockSize * 4;
+            let areaH = (maxY - minY) + blockSize * 8;
+            let targetZoom = Math.min(1.2, Math.max(0.4, Math.min(canvas.width / areaW, canvas.height / areaH)));
+
+            camX += (targetCamX - camX) * 0.08;
+            camY += (targetCamY - camY) * 0.08;
+            zoom += (targetZoom - zoom) * 0.08;
+        }
+
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        let offsetX = canvas.width / 2 - camX * zoom;
+        let offsetY = canvas.height / 2 - camY * zoom;
+        ctx.setTransform(zoom, 0, 0, zoom, offsetX, offsetY);
+
+        ctx.save();
+        if (shakeTimer > 0) {
+            ctx.translate((Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20);
+            if (isHost) {
+                shakeTimer--;
+                if(shakeTimer === 15 && eliminationPending) {
+                    executeElimination();
+                    eliminationPending = false;
+                }
+            }
+        }
+        
+        for (let key in world) {
+            let [x, y] = key.split(',').map(Number);
+            ctx.fillStyle = world[key];
+            ctx.fillRect(x * blockSize, y * blockSize, blockSize - 1, blockSize - 1);
+        }
+
+        if (globalTimer <= 5) {
+            let activeRow = getActiveRow();
+            let dangerY = (activeRow + dangerRowOffset) * blockSize;
+            let dangerAlpha = 0.15 + Math.sin(Date.now() * 0.015) * 0.1;
+            if (globalTimer === 0 || eliminationPending) dangerAlpha = 0.7;
+            ctx.fillStyle = `rgba(255, 0, 0, ${dangerAlpha})`;
+            ctx.fillRect(-10000, dangerY, 20000, 10000);
+        }
+
+        fallingBlocks.forEach(b => {
+            ctx.fillStyle = b.color;
+            ctx.fillRect(b.x, b.y, blockSize - 1, blockSize - 1);
+        });
+
+        players.forEach(p => {
+            if (!p.alive) return;
+            drawSlime(ctx, p);
+        });
+        
+        ctx.restore();
+        requestAnimationFrame(draw);
+    }
+
+    const workerCode = "setInterval(function(){ postMessage('tick'); }, 16);";
+    const workerBlob = new Blob([workerCode], { type: "application/javascript" });
+    const loopWorker = new Worker(URL.createObjectURL(workerBlob));
+    loopWorker.onmessage = function() {
+        update();
+    };
+
+    draw();
+</script>
 </body>
 </html>
