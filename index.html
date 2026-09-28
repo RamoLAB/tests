@@ -3,15 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CyberHex: Quantum Warfare P2P</title>
-  
-  <!-- Dependencies: Tailwind CSS, PeerJS, Font Awesome, Orbitron Font -->
+  <title>CyberHex: Quantum Warfare</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-
-  <!-- Tailwind Configuration -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -19,833 +14,455 @@
         extend: {
           fontFamily: {
             orbitron: ['Orbitron', 'sans-serif'],
-            mono: ['Share Tech Mono', 'monospace'],
-            sans: ['Inter', 'sans-serif']
+            rajdhani: ['Rajdhani', 'sans-serif'],
           },
           colors: {
             cyber: {
-              black: '#030712',
-              card: 'rgba(15, 23, 42, 0.75)',
-              border: 'rgba(56, 189, 248, 0.25)',
-              blue: '#00f0ff',
-              magenta: '#ff007f',
-              purple: '#8b5cf6',
-              green: '#00ff88',
-              gold: '#ffd700'
+              bg: '#050811',
+              card: '#0d1322',
+              border: '#1e293b',
+              p1: '#00f0ff',
+              p1dark: '#008b94',
+              p2: '#ff0055',
+              p2dark: '#990033',
+              accent: '#7000ff'
             }
           }
         }
       }
     }
   </script>
-
   <style>
     body {
-      background-color: #030712;
+      background-color: #050811;
       background-image: 
-        radial-gradient(circle at 15% 15%, rgba(0, 240, 255, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 85% 85%, rgba(255, 0, 127, 0.08) 0%, transparent 40%);
+        radial-gradient(circle at 50% 0%, rgba(112, 0, 255, 0.15), transparent 70%),
+        radial-gradient(circle at 0% 100%, rgba(0, 240, 255, 0.08), transparent 50%);
       color: #f1f5f9;
-      user-select: none;
+      font-family: 'Rajdhani', sans-serif;
       overflow-x: hidden;
+      user-select: none;
     }
-
+    .neon-text-p1 { text-shadow: 0 0 10px rgba(0, 240, 255, 0.7); }
+    .neon-text-p2 { text-shadow: 0 0 10px rgba(ff, 0, 85, 0.7); }
     .glass-panel {
-      background: rgba(15, 23, 42, 0.75);
+      background: rgba(13, 19, 34, 0.75);
       backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(56, 189, 248, 0.2);
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
     }
-
-    .glass-panel-magenta {
-      background: rgba(24, 15, 30, 0.75);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 0, 127, 0.25);
-    }
-
-    .cyber-glow-blue {
-      box-shadow: 0 0 20px rgba(0, 240, 255, 0.35);
-    }
-
-    .cyber-glow-magenta {
-      box-shadow: 0 0 20px rgba(255, 0, 127, 0.35);
-    }
-
-    .cyber-text-glow {
-      text-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
-    }
-
-    .cyber-text-glow-magenta {
-      text-shadow: 0 0 10px rgba(255, 0, 127, 0.6);
-    }
-
-    /* Custom Scrollbars */
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: rgba(3, 7, 18, 0.8); }
-    ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.4); border-radius: 2px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(0, 240, 255, 0.8); }
-
-    /* Canvas styling */
-    canvas {
-      touch-action: none;
-    }
+    .hex-canvas { cursor: pointer; filter: drop-shadow(0 0 15px rgba(0, 240, 255, 0.15)); }
   </style>
 </head>
-<body class="min-h-screen flex flex-col font-sans antialiased text-slate-100">
+<body class="min-h-screen flex flex-col items-center justify-between p-2 md:p-6">
 
-  <header class="w-full border-b border-cyber-border bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
-      
-      <!-- Brand Title -->
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-cyan-950/80 border border-cyber-blue/50 flex items-center justify-center text-cyber-blue cyber-glow-blue">
-          <i class="fa-solid fa-cube text-xl animate-pulse"></i>
-        </div>
-        <div>
-          <h1 class="font-orbitron font-black text-xl sm:text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyber-blue via-cyan-200 to-cyber-magenta">
-            CYBER<span class="text-cyber-magenta">HEX</span>
-          </h1>
-          <p class="text-[10px] font-mono text-cyan-400/70 tracking-widest uppercase">Quantum Warfare • Serverless P2P</p>
-        </div>
+  <!-- Cabeçalho -->
+  <header class="w-full max-w-4xl flex items-center justify-between mb-4 glass-panel p-4 rounded-xl border-cyan-500/30">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-600 flex items-center justify-center font-orbitron font-black text-xl text-black shadow-lg shadow-cyan-500/20">
+        HX
       </div>
-
-      <!-- Connection / Peer Status Bar -->
-      <div class="flex flex-wrap items-center gap-2 text-xs font-mono">
-        <!-- Audio Mute Toggle -->
-        <button id="audio-btn" onclick="toggleAudio()" class="px-3 py-1.5 rounded-lg glass-panel border border-slate-700 text-slate-300 hover:text-cyber-blue transition flex items-center gap-1.5">
-          <i id="audio-icon" class="fa-solid fa-volume-high text-cyber-blue"></i>
-          <span id="audio-text" class="hidden sm:inline">SOM ON</span>
-        </button>
-
-        <!-- Mode Indicator / ID Display -->
-        <div class="flex items-center glass-panel rounded-lg p-1 px-3 border border-slate-700">
-          <span class="text-slate-400 mr-2">MEU ID:</span>
-          <span id="my-peer-id" class="text-cyber-blue font-bold tracking-wider select-all">INICIALIZANDO...</span>
-          <button id="copy-link-btn" onclick="copyInviteLink()" class="ml-2 p-1 text-slate-400 hover:text-white transition" title="Copiar Link de Convite P2P">
-            <i class="fa-regular fa-copy"></i>
-          </button>
-        </div>
-
-        <!-- Mode Selection / Connection Controls -->
-        <div id="p2p-input-group" class="flex items-center gap-1.5">
-          <input type="text" id="target-peer-id" placeholder="ID DO OPONENTE..." class="bg-slate-900/90 border border-slate-700 focus:border-cyber-blue rounded-lg px-2.5 py-1.5 text-xs text-cyan-300 font-mono outline-none w-36 sm:w-44 uppercase">
-          <button onclick="connectToPeer()" class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-extrabold px-3 py-1.5 rounded-lg transition font-orbitron flex items-center gap-1">
-            <i class="fa-solid fa-plug"></i>
-            <span>ENTRAR</span>
-          </button>
-        </div>
-
-        <button id="ai-mode-btn" onclick="startAIMode()" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold px-3 py-1.5 rounded-lg transition font-orbitron flex items-center gap-1">
-          <i class="fa-solid fa-robot"></i>
-          <span>TREINO IA</span>
-        </button>
+      <div>
+        <h1 class="font-orbitron font-black text-xl md:text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-300 to-fuchsia-500">
+          CYBERHEX
+        </h1>
+        <p class="text-xs text-slate-400 tracking-widest uppercase">Quantum Warfare P2P</p>
       </div>
-
+    </div>
+    
+    <div class="flex items-center space-x-2 text-xs font-orbitron">
+      <div id="status-badge" class="px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span>
+        <span id="status-text">AGUARDANDO CONEXÃO</span>
+      </div>
     </div>
   </header>
 
-  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 flex flex-col gap-4">
-
-    <!-- Top Match Status Header -->
-    <div id="match-hud" class="w-full glass-panel rounded-xl p-3 sm:p-4 flex flex-wrap items-center justify-between gap-4 border border-cyber-border">
-      
-      <!-- Player 1 Status -->
-      <div class="flex items-center gap-3">
-        <div class="relative">
-          <div id="p1-avatar" class="w-11 h-11 rounded-lg bg-cyan-950 border-2 border-cyber-blue flex items-center justify-center text-cyber-blue text-xl font-orbitron font-bold cyber-glow-blue">
-            P1
-          </div>
-          <span id="p1-turn-indicator" class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-cyber-blue rounded-full animate-ping"></span>
-        </div>
-        <div>
-          <span id="p1-name" class="text-xs font-mono text-cyan-400 block font-semibold">JOGADOR 1 (CYAN)</span>
-          <div class="flex items-center gap-3">
-            <span id="p1-score" class="font-orbitron font-black text-2xl text-cyber-blue cyber-text-glow">120 KB</span>
-            <span id="p1-cores" class="text-[11px] font-mono text-slate-400">0 Cores</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Turn Status & Countdown Timer -->
-      <div class="flex flex-col items-center justify-center mx-auto text-center">
-        <div id="turn-badge" class="px-4 py-1 rounded-full text-xs font-orbitron font-extrabold uppercase tracking-widest bg-cyan-950 border border-cyber-blue text-cyber-blue mb-1 animate-pulse">
-          TURNO DO CYBER-HOST
-        </div>
-        <div id="timer-display" class="font-mono text-lg text-slate-300 flex items-center gap-1">
-          <i class="fa-regular fa-clock text-cyan-400"></i>
-          <span id="timer-sec" class="text-cyber-blue font-bold">25</span>s
-        </div>
-      </div>
-
-      <!-- Player 2 Status -->
-      <div class="flex items-center gap-3 text-right">
-        <div>
-          <span id="p2-name" class="text-xs font-mono text-pink-400 block font-semibold">OPONENTE (MAGENTA)</span>
-          <div class="flex items-center justify-end gap-3">
-            <span id="p2-cores" class="text-[11px] font-mono text-slate-400">0 Cores</span>
-            <span id="p2-score" class="font-orbitron font-black text-2xl text-cyber-magenta cyber-text-glow-magenta">120 KB</span>
-          </div>
-        </div>
-        <div class="relative">
-          <div id="p2-avatar" class="w-11 h-11 rounded-lg bg-pink-950 border-2 border-cyber-magenta flex items-center justify-center text-cyber-magenta text-xl font-orbitron font-bold">
-            P2
-          </div>
-          <span id="p2-turn-indicator" class="hidden absolute -top-1 -right-1 w-3.5 h-3.5 bg-cyber-magenta rounded-full animate-ping"></span>
-        </div>
-      </div>
-
+  <!-- Painel de Conexão (Lobby) -->
+  <section id="lobby-panel" class="w-full max-w-xl glass-panel p-6 rounded-2xl border-indigo-500/30 mb-6 transition-all duration-300">
+    <div class="text-center mb-6">
+      <h2 class="font-orbitron font-bold text-lg text-cyan-400 mb-1">Painel de Sinalização P2P</h2>
+      <p class="text-sm text-slate-400">Conecte-se diretamente a outro jogador sem intermediários.</p>
     </div>
 
-    <!-- Central Interactive Workspace: Grid + Tactical Deck Panel -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-      
-      <!-- Main Tactical Hex Board Area (Canvas) -->
-      <div class="lg:col-span-8 flex flex-col gap-4">
-        
-        <!-- Interactive Canvas Card -->
-        <div class="glass-panel rounded-xl p-3 border border-cyber-border flex flex-col items-center justify-center relative overflow-hidden">
-          
-          <!-- Board Overlay Info -->
-          <div class="w-full flex justify-between items-center text-xs font-mono text-slate-400 mb-2 px-2">
-            <span class="flex items-center gap-1.5"><i class="fa-solid fa-satellite-dish text-cyber-blue"></i> CAMPO QUANTUM HEX</span>
-            <span id="game-status-sub" class="text-cyan-300">Aguardando Conexão...</span>
-          </div>
-
-          <!-- Hex Canvas Container -->
-          <div class="relative w-full aspect-square max-w-[560px] flex items-center justify-center">
-            <canvas id="hex-canvas" class="w-full h-full rounded-lg cursor-crosshair"></canvas>
-            
-            <!-- Dynamic Overlay Banner for Phase Changes or End Game -->
-            <div id="banner-overlay" class="hidden absolute inset-0 bg-slate-950/85 backdrop-blur-md rounded-lg flex flex-col items-center justify-center p-6 text-center z-20">
-              <h2 id="banner-title" class="font-orbitron text-3xl font-black text-cyber-blue mb-2 cyber-text-glow">VITÓRIA QUANTUM</h2>
-              <p id="banner-desc" class="font-mono text-sm text-slate-300 mb-6 max-w-md">Você dominou mais de 75% da malha e esgotou os nós energéticos do oponente.</p>
-              <button onclick="restartGame()" class="bg-gradient-to-r from-cyber-blue to-blue-600 text-slate-950 font-orbitron font-black px-6 py-2.5 rounded-lg hover:scale-105 transition shadow-lg cyber-glow-blue">
-                NOVA PARTIDA
-              </button>
-            </div>
-          </div>
-
-          <!-- Board Footnote Controls -->
-          <div class="w-full flex justify-between items-center text-[11px] font-mono text-slate-500 mt-2 px-2">
-            <span>Dica: Conecte seus nós para criar reações em cadeia</span>
-            <button onclick="pingBoard()" class="hover:text-cyber-blue transition flex items-center gap-1">
-              <i class="fa-solid fa-crosshairs"></i> Enviar Radar Ping
-            </button>
-          </div>
-
-        </div>
-
-      </div>
-
-      <!-- Right Sidebar: Quantum Deck Selector & Event Log -->
-      <div class="lg:col-span-4 flex flex-col gap-4">
-        
-        <!-- Core Selector Deck -->
-        <div class="glass-panel rounded-xl p-4 border border-cyber-border space-y-3">
-          <h3 class="font-orbitron text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center justify-between">
-            <span><i class="fa-solid fa-microchip mr-1.5"></i> SELEÇÃO DE NÓ QUANTUM</span>
-            <span id="deck-cost-tag" class="text-[10px] text-slate-400 font-mono">Energia: <b class="text-cyber-blue">∞</b></span>
-          </h3>
-
-          <div class="grid grid-cols-2 gap-2.5" id="core-deck">
-            
-            <!-- Core Type 1: Energy Core -->
-            <button onclick="selectCoreType('ENERGY')" id="core-btn-ENERGY" class="core-card p-3 rounded-lg bg-slate-900/90 border-2 border-cyber-blue text-left transition relative overflow-hidden group cyber-glow-blue">
-              <div class="flex items-center justify-between mb-1">
-                <i class="fa-solid fa-bolt text-cyber-blue text-lg"></i>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">+VALOR</span>
-              </div>
-              <div class="font-orbitron text-xs font-bold text-slate-100">Nó Gerador</div>
-              <p class="text-[10px] font-mono text-slate-400 mt-1">Expande território e gera +15 KB por turno.</p>
-            </button>
-
-            <!-- Core Type 2: Shield Node -->
-            <button onclick="selectCoreType('SHIELD')" id="core-btn-SHIELD" class="core-card p-3 rounded-lg bg-slate-900/60 border border-slate-700 text-left transition hover:border-cyan-500 relative overflow-hidden group">
-              <div class="flex items-center justify-between mb-1">
-                <i class="fa-solid fa-shield-halved text-purple-400 text-lg"></i>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800">DEFESA</span>
-              </div>
-              <div class="font-orbitron text-xs font-bold text-slate-100">Nó Escudo</div>
-              <p class="text-[10px] font-mono text-slate-400 mt-1">Bloqueia ataques diretos e protege vizinhos.</p>
-            </button>
-
-            <!-- Core Type 3: Disruptor Core -->
-            <button onclick="selectCoreType('DISRUPTOR')" id="core-btn-DISRUPTOR" class="core-card p-3 rounded-lg bg-slate-900/60 border border-slate-700 text-left transition hover:border-pink-500 relative overflow-hidden group">
-              <div class="flex items-center justify-between mb-1">
-                <i class="fa-solid fa-virus text-cyber-magenta text-lg"></i>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-pink-950 text-pink-300 border border-pink-800">ATAQUE</span>
-              </div>
-              <div class="font-orbitron text-xs font-bold text-slate-100">Nó Corruptor</div>
-              <p class="text-[10px] font-mono text-slate-400 mt-1">Converte nós neutros/inimigos adjacentes sem escudo.</p>
-            </button>
-
-            <!-- Core Type 4: Quantum Overdrive -->
-            <button onclick="selectCoreType('OVERDRIVE')" id="core-btn-OVERDRIVE" class="core-card p-3 rounded-lg bg-slate-900/60 border border-slate-700 text-left transition hover:border-yellow-500 relative overflow-hidden group">
-              <div class="flex items-center justify-between mb-1">
-                <i class="fa-solid fa-atom text-amber-400 text-lg"></i>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">CADEIA</span>
-              </div>
-              <div class="font-orbitron text-xs font-bold text-slate-100">Quantum Pulse</div>
-              <p class="text-[10px] font-mono text-slate-400 mt-1">Cria onda de choque em raio de 2 células.</p>
-            </button>
-
-          </div>
-        </div>
-
-        <!-- Live Battle Log Feed & Chat -->
-        <div class="glass-panel rounded-xl p-3 border border-cyber-border flex flex-col h-64 lg:h-72">
-          <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
-            <h4 class="font-orbitron text-xs font-bold text-cyan-400 uppercase flex items-center gap-1.5">
-              <i class="fa-solid fa-terminal text-cyber-blue"></i> Log de Batalha Quantum
-            </h4>
-            <span class="w-2 h-2 rounded-full bg-cyber-green animate-pulse"></span>
-          </div>
-
-          <div id="event-feed" class="flex-1 overflow-y-auto space-y-1.5 text-xs font-mono pr-1 text-slate-300">
-            <div class="text-slate-500 italic">Rede inicializada. Aguardando movimentos...</div>
-          </div>
-
-          <!-- Quick Chat/Ping Bar -->
-          <div class="mt-2 pt-2 border-t border-slate-800 flex items-center gap-2">
-            <input type="text" id="chat-input" placeholder="Mensagem tática..." onkeydown="if(event.key==='Enter') sendChatMessage()" class="flex-1 bg-slate-900/90 border border-slate-700 focus:border-cyber-blue rounded-lg px-2.5 py-1 text-xs text-slate-200 outline-none font-mono">
-            <button onclick="sendChatMessage()" class="bg-cyan-950 border border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:text-slate-950 transition p-1.5 rounded-lg text-xs">
-              <i class="fa-solid fa-paper-plane"></i>
-            </button>
-          </div>
-        </div>
-
-      </div>
-
+    <!-- Mensagem de Erro Alerta -->
+    <div id="error-alert" class="hidden mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/50 text-red-200 text-sm flex items-center justify-between">
+      <span id="error-alert-msg">Oponente não encontrado ou indisponível.</span>
+      <button onclick="hideError()" class="text-red-400 hover:text-white font-bold ml-2">✕</button>
     </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <!-- Meu ID -->
+      <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
+        <span class="text-xs text-slate-400 font-orbitron uppercase mb-1">Seu ID de Conexão</span>
+        <div class="flex items-center justify-between gap-2">
+          <span id="my-id-display" class="font-mono text-sm text-cyan-300 truncate">Gerando ID...</span>
+          <button onclick="copyMyId()" class="px-2 py-1 bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 border border-cyan-500/40 rounded text-xs transition">
+            Copiar
+          </button>
+        </div>
+      </div>
+
+      <!-- Conectar a outro ID -->
+      <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 flex flex-col justify-between">
+        <span class="text-xs text-slate-400 font-orbitron uppercase mb-1">ID do Oponente</span>
+        <div class="flex gap-2">
+          <input type="text" id="target-peer-id" placeholder="Cole o ID aqui" class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+          <button id="connect-btn" onclick="connectToPeer()" class="px-3 py-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-bold font-orbitron rounded text-xs transition shadow-lg shadow-cyan-500/20">
+            Conectar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between border-t border-slate-800 pt-4">
+      <button onclick="startAiGame()" class="w-full py-2.5 bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/40 font-orbitron font-semibold rounded-xl text-sm transition flex items-center justify-center gap-2">
+        <span>🤖</span> Jogar Offline contra a IA Tática
+      </button>
+    </div>
+  </section>
+
+  <!-- Área Principal de Jogo -->
+  <main id="game-container" class="w-full max-w-4xl flex flex-col lg:flex-row items-center justify-center gap-6 my-auto">
+    
+    <!-- Painel Lateral / HUD P1 -->
+    <div class="w-full lg:w-48 glass-panel p-4 rounded-xl flex flex-row lg:flex-col justify-between items-center gap-4 border-cyan-500/30">
+      <div class="flex items-center lg:flex-col gap-3 text-left lg:text-center">
+        <div class="w-12 h-12 rounded-full border-2 border-cyan-400 bg-cyan-950/50 flex items-center justify-center text-cyan-400 font-orbitron font-bold text-lg neon-text-p1">
+          P1
+        </div>
+        <div>
+          <h3 id="p1-name" class="font-orbitron font-bold text-cyan-300 text-sm">Jogador 1</h3>
+          <p class="text-xs text-slate-400">Azul Neon</p>
+        </div>
+      </div>
+
+      <div class="text-right lg:text-center">
+        <span class="text-xs text-slate-400 font-orbitron uppercase">Células</span>
+        <div id="p1-score" class="font-orbitron font-black text-3xl text-cyan-400">1</div>
+      </div>
+    </div>
+
+    <!-- Canvas Central do Tabuleiro -->
+    <div class="relative flex flex-col items-center">
+      <!-- Indicador do Turno -->
+      <div id="turn-banner" class="mb-3 px-6 py-1.5 rounded-full glass-panel border border-cyan-500/40 text-center font-orbitron font-bold text-sm tracking-wider text-cyan-300 shadow-lg">
+        SUA VEZ DE JOGAR
+      </div>
+
+      <!-- Canvas Hexagonal -->
+      <canvas id="hex-canvas" width="480" height="420" class="hex-canvas rounded-2xl glass-panel border-2 border-slate-800"></canvas>
+
+      <!-- Seletor de Tipo de Nó -->
+      <div class="mt-4 flex gap-2 glass-panel p-2 rounded-xl border-slate-800">
+        <button onclick="selectNodeType('generator')" id="btn-node-generator" class="node-select-btn active px-3 py-1.5 rounded-lg text-xs font-orbitron flex items-center gap-1.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/50">
+          <span>⚡</span> Gerador
+        </button>
+        <button onclick="selectNodeType('shield')" id="btn-node-shield" class="node-select-btn px-3 py-1.5 rounded-lg text-xs font-orbitron flex items-center gap-1.5 bg-slate-800 text-slate-400 border border-slate-700">
+          <span>🛡️</span> Escudo
+        </button>
+        <button onclick="selectNodeType('disruptor')" id="btn-node-disruptor" class="node-select-btn px-3 py-1.5 rounded-lg text-xs font-orbitron flex items-center gap-1.5 bg-slate-800 text-slate-400 border border-slate-700">
+          <span>💥</span> Disruptor
+        </button>
+      </div>
+    </div>
+
+    <!-- Painel Lateral / HUD P2 -->
+    <div class="w-full lg:w-48 glass-panel p-4 rounded-xl flex flex-row lg:flex-col justify-between items-center gap-4 border-fuchsia-500/30">
+      <div class="flex items-center lg:flex-col gap-3 text-left lg:text-center">
+        <div class="w-12 h-12 rounded-full border-2 border-fuchsia-500 bg-fuchsia-950/50 flex items-center justify-center text-fuchsia-400 font-orbitron font-bold text-lg neon-text-p2">
+          P2
+        </div>
+        <div>
+          <h3 id="p2-name" class="font-orbitron font-bold text-fuchsia-300 text-sm">Oponente</h3>
+          <p class="text-xs text-slate-400">Rosa Neon</p>
+        </div>
+      </div>
+
+      <div class="text-right lg:text-center">
+        <span class="text-xs text-slate-400 font-orbitron uppercase">Células</span>
+        <div id="p2-score" class="font-orbitron font-black text-3xl text-fuchsia-400">1</div>
+      </div>
+    </div>
+
   </main>
 
-  <!-- Notification Toast -->
-  <div id="toast" class="fixed bottom-5 right-5 glass-panel border border-cyber-blue text-slate-100 px-4 py-3 rounded-xl shadow-2xl transition-all duration-300 transform translate-y-20 opacity-0 font-mono text-xs z-50 flex items-center gap-2">
-    <i class="fa-solid fa-circle-info text-cyber-blue"></i>
-    <span id="toast-msg">Notificação de sistema...</span>
-  </div>
+  <!-- Feed do Registro de Batalha -->
+  <footer class="w-full max-w-4xl mt-6 glass-panel p-3 rounded-xl border-slate-800 text-xs font-mono text-slate-400 flex items-center justify-between">
+    <div class="flex items-center gap-2 overflow-hidden">
+      <span class="text-cyan-400 font-bold font-orbitron">[LOG]:</span>
+      <span id="battle-log" class="truncate">Aguardando início do confronto estratégico...</span>
+    </div>
+    <button onclick="toggleAudio()" id="audio-btn" class="text-slate-400 hover:text-cyan-300 text-sm ml-2">🔊 Som: ON</button>
+  </footer>
 
   <script>
     /* ==========================================================================
-       1. PROCEDURAL SOUND SYNTHESIS ENGINE (Web Audio API)
+       1. SISTEMA DE ÁUDIO SINTETIZADO (NATIVO WEB AUDIO API)
        ========================================================================== */
-    class AudioEngine {
-      constructor() {
-        this.ctx = null;
-        this.muted = false;
-      }
+    let audioCtx = null;
+    let audioEnabled = true;
 
-      init() {
-        if (!this.ctx) {
-          const AudioCtx = window.AudioContext || window.webkitAudioContext;
-          this.ctx = new AudioCtx();
-        }
-        if (this.ctx.state === 'suspended') {
-          this.ctx.resume();
-        }
-      }
-
-      playTone(freq, type, duration, gainVal = 0.1) {
-        if (this.muted) return;
-        this.init();
-        try {
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.type = type;
-          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
-          osc.connect(gain);
-          gain.connect(this.ctx.destination);
-          osc.start();
-          osc.stop(this.ctx.currentTime + duration);
-        } catch(e) {}
-      }
-
-      click() {
-        this.playTone(800, 'sine', 0.05, 0.08);
-      }
-
-      placeCore(type) {
-        if (this.muted) return;
-        this.init();
-        const now = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        
-        let freq = 440;
-        if (type === 'SHIELD') freq = 330;
-        if (type === 'DISRUPTOR') freq = 660;
-        if (type === 'OVERDRIVE') freq = 880;
-
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, now);
-        osc.frequency.exponentialRampToValueAtTime(freq * 1.8, now + 0.2);
-        gain.gain.setValueAtTime(0.15, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-        
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start();
-        osc.stop(now + 0.25);
-      }
-
-      surge() {
-        if (this.muted) return;
-        this.init();
-        this.playTone(1200, 'sawtooth', 0.3, 0.05);
-      }
-
-      win() {
-        if (this.muted) return;
-        [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
-          setTimeout(() => this.playTone(f, 'sine', 0.4, 0.12), i * 120);
-        });
-      }
-
-      lose() {
-        if (this.muted) return;
-        [400, 350, 300, 220].forEach((f, i) => {
-          setTimeout(() => this.playTone(f, 'sawtooth', 0.4, 0.1), i * 140);
-        });
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
     }
-
-    const sound = new AudioEngine();
 
     function toggleAudio() {
-      sound.muted = !sound.muted;
-      document.getElementById('audio-icon').className = sound.muted ? 'fa-solid fa-volume-xmark text-rose-500' : 'fa-solid fa-volume-high text-cyber-blue';
-      document.getElementById('audio-text').innerText = sound.muted ? 'SOM OFF' : 'SOM ON';
+      audioEnabled = !audioEnabled;
+      document.getElementById('audio-btn').innerText = audioEnabled ? "🔊 Som: ON" : "🔇 Som: OFF";
+    }
+
+    function playSound(type) {
+      if (!audioEnabled) return;
+      initAudio();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      const now = audioCtx.currentTime;
+
+      if (type === 'click') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+        osc.start(now);
+        osc.stop(now + 0.05);
+      } else if (type === 'place') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(450, now + 0.15);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } else if (type === 'capture') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.linearRampToValueAtTime(800, now + 0.2);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      } else if (type === 'win') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(400, now);
+        osc.frequency.setValueAtTime(600, now + 0.1);
+        osc.frequency.setValueAtTime(900, now + 0.2);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        osc.start(now);
+        osc.stop(now + 0.5);
+      }
     }
 
     /* ==========================================================================
-       2. GAME CONSTANTS, GRID & TACTICAL STATE
+       2. GERENCIAMENTO P2P COM PEERJS & RESOLUÇÃO DE ERROS
        ========================================================================== */
-    const HEX_RADIUS = 32;
-    const GRID_RINGS = 3; // Produces a tactical symmetrical board
-    let canvas, ctx;
-    
-    let board = []; // Array of hex cells
-    let selectedCoreType = 'ENERGY'; // 'ENERGY', 'SHIELD', 'DISRUPTOR', 'OVERDRIVE'
-    
-    // Players: 1 = Local/Host (Cyan), 2 = Opponent/AI (Magenta)
-    let myPlayerId = 1;
-    let currentTurn = 1; 
-    let gameState = 'SETUP'; // 'SETUP', 'PLAYING', 'GAMEOVER'
-    let isAIMode = false;
-    let turnTimer = null;
-    let timeLeft = 25;
-
-    // Networking
-    let myPeer = null;
+    let peer = null;
     let conn = null;
+    let myRole = 'p1'; // 'p1' (Host), 'p2' (Convidado), ou 'ai'
+    let isMyTurn = false;
+    let isAiGame = false;
+    let selectedNodeType = 'generator';
 
-    /* ==========================================================================
-       3. HEX MATHEMATICS & CANVAS RENDERER
-       ========================================================================== */
-    class Hex {
-      constructor(q, r) {
-        this.q = q; // Axial coords
-        this.r = r;
-        this.s = -q - r;
-        this.owner = 0; // 0 = Neutral, 1 = P1 (Cyan), 2 = P2 (Magenta)
-        this.coreType = null; // null, 'ENERGY', 'SHIELD', 'DISRUPTOR', 'OVERDRIVE'
-        this.pulseAnim = 0;
+    // Configuração com servidores STUN públicos da Google para garantir transpassamento NAT
+    const peerConfig = {
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ]
       }
-    }
-
-    function generateHexGrid(rings) {
-      const hexes = [];
-      for (let q = -rings; q <= rings; q++) {
-        const r1 = Math.max(-rings, -q - rings);
-        const r2 = Math.min(rings, -q + rings);
-        for (let r = r1; r <= r2; r++) {
-          hexes.push(new Hex(q, r));
-        }
-      }
-      return hexes;
-    }
-
-    function hexToPixel(hex, centerX, centerY) {
-      const x = HEX_RADIUS * (Math.sqrt(3) * hex.q + Math.sqrt(3)/2 * hex.r) + centerX;
-      const y = HEX_RADIUS * (3/2 * hex.r) + centerY;
-      return { x, y };
-    }
-
-    function pixelToHex(px, py, centerX, centerY) {
-      const ptX = (px - centerX) / HEX_RADIUS;
-      const ptY = (py - centerY) / HEX_RADIUS;
-      const q = (Math.sqrt(3)/3 * ptX - 1/3 * ptY);
-      const r = (2/3 * ptY);
-      return hexRound(q, r);
-    }
-
-    function hexRound(q, r) {
-      let s = -q - r;
-      let rx = Math.round(q);
-      let ry = Math.round(r);
-      let rz = Math.round(s);
-
-      const x_diff = Math.abs(rx - q);
-      const y_diff = Math.abs(ry - r);
-      const z_diff = Math.abs(rz - s);
-
-      if (x_diff > y_diff && x_diff > z_diff) {
-        rx = -ry - rz;
-      } else if (y_diff > z_diff) {
-        ry = -rx - rz;
-      } else {
-        rz = -rx - ry;
-      }
-      return { q: rx, r: ry };
-    }
-
-    function getNeighbors(hex) {
-      const directions = [
-        {q: 1, r: 0}, {q: 1, r: -1}, {q: 0, r: -1},
-        {q: -1, r: 0}, {q: -1, r: 1}, {q: 0, r: 1}
-      ];
-      return directions.map(d => {
-        return board.find(h => h.q === hex.q + d.q && h.r === hex.r + d.r);
-      }).filter(Boolean);
-    }
-
-    /* ==========================================================================
-       4. INITIALIZATION & CANVAS DRAWING LOOP
-       ========================================================================== */
-    window.onload = () => {
-      canvas = document.getElementById('hex-canvas');
-      ctx = canvas.getContext('2d');
-
-      resizeCanvas();
-      window.addEventListener('resize', resizeCanvas);
-
-      board = generateHexGrid(GRID_RINGS);
-      
-      // Default starting base cores
-      const centerP1 = board.find(h => h.q === -GRID_RINGS && h.r === 0);
-      const centerP2 = board.find(h => h.q === GRID_RINGS && h.r === 0);
-      if (centerP1) { centerP1.owner = 1; centerP1.coreType = 'ENERGY'; }
-      if (centerP2) { centerP2.owner = 2; centerP2.coreType = 'ENERGY'; }
-
-      // Canvas Interaction Handlers
-      canvas.addEventListener('pointerdown', handleCanvasClick);
-      canvas.addEventListener('pointermove', handleCanvasHover);
-
-      initPeerNetwork();
-
-      // Check URL auto-join parameter
-      const urlParams = new URLSearchParams(window.location.search);
-      const joinParam = urlParams.get('join') || urlParams.get('peer');
-      if (joinParam) {
-        document.getElementById('target-peer-id').value = joinParam;
-        logEvent(`Link de convite detectado. Clique em "ENTRAR" para conectar.`);
-      }
-
-      requestAnimationFrame(renderLoop);
     };
 
-    function resizeCanvas() {
-      const container = canvas.parentElement;
-      canvas.width = container.clientWidth * window.devicePixelRatio;
-      canvas.height = container.clientHeight * window.devicePixelRatio;
+    function initPeer() {
+      peer = new Peer(peerConfig);
+
+      peer.on('open', (id) => {
+        document.getElementById('my-id-display').innerText = id;
+        logBattle("ID P2P gerado com sucesso. Pronto para conectar.");
+
+        // Checar se veio com link de convite (?join=PEER_ID)
+        const urlParams = new URLSearchParams(window.location.search);
+        const joinId = urlParams.get('join');
+        if (joinId) {
+          document.getElementById('target-peer-id').value = joinId;
+          setTimeout(() => connectToPeer(), 500);
+        }
+      });
+
+      // Receber Conexão Entrante (Você é o Host = P1)
+      peer.on('connection', (c) => {
+        conn = c;
+        myRole = 'p1';
+        isMyTurn = true;
+        setupConnection("Conexão estabelecida! Você é o P1 (Primeiro a Jogar).");
+      });
+
+      // Tratamento Completo do Erro 'peer-unavailable' e Falhas de Rede
+      peer.on('error', (err) => {
+        console.error("Erro no PeerJS:", err.type, err);
+        let msg = "Erro na conexão P2P.";
+
+        if (err.type === 'peer-unavailable') {
+          msg = "Erro: ID do oponente não foi encontrado ou está offline!";
+        } else if (err.type === 'network' || err.type === 'disconnected') {
+          msg = "Erro de rede ao conectar ao servidor de sinalização.";
+        } else if (err.type === 'browser-incompatible') {
+          msg = "Navegador incompatível com WebRTC P2P.";
+        }
+
+        showError(msg);
+        resetConnectionState();
+      });
+
+      peer.on('disconnected', () => {
+        logBattle("Desconectado do servidor. Tentando reconectar...");
+        peer.reconnect();
+      });
     }
 
-    let hoveredHex = null;
+    function connectToPeer() {
+      hideError();
+      const targetId = document.getElementById('target-peer-id').value.trim();
+      if (!targetId) {
+        showError("Digite um ID válido para conectar.");
+        return;
+      }
 
-    function handleCanvasHover(e) {
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
+      logBattle("Tentando conectar a: " + targetId + "...");
+      conn = peer.connect(targetId, { reliable: true });
+      myRole = 'p2';
+      isMyTurn = false;
+
+      conn.on('open', () => {
+        setupConnection("Conectado com sucesso! Você é o P2.");
+      });
+
+      // Aguarda 10 segundos caso a conexão trave sem disparar erro do peer
+      setTimeout(() => {
+        if (conn && !conn.open && !isAiGame) {
+          showError("A conexão demorou muito. Verifique se o ID está correto.");
+          resetConnectionState();
+        }
+      }, 10000);
+    }
+
+    function setupConnection(statusMsg) {
+      document.getElementById('status-badge').className = "px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-2";
+      document.getElementById('status-badge').innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> CONECTADO P2P`;
       
-      const mouseX = (e.clientX - rect.left) * scaleX;
-      const mouseY = (e.clientY - rect.top) * scaleY;
+      document.getElementById('p2-name').innerText = myRole === 'p1' ? "Oponente (P2)" : "Você (P2)";
+      document.getElementById('p1-name').innerText = myRole === 'p1' ? "Você (P1)" : "Anfitrião (P1)";
 
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
+      logBattle(statusMsg);
+      updateTurnBanner();
 
-      const coords = pixelToHex(mouseX, mouseY, centerX, centerY);
-      hoveredHex = board.find(h => h.q === coords.q && h.r === coords.r) || null;
+      // Escutar mensagens recebidas
+      conn.on('data', (data) => handlePeerData(data));
+      conn.on('close', () => {
+        logBattle("Conexão P2P encerrada pelo oponente.");
+        alert("O oponente se desconectou.");
+        location.reload();
+      });
     }
 
-    function handleCanvasClick(e) {
-      sound.click();
-      if (gameState !== 'PLAYING') {
-        showToast("Inicie uma partida P2P ou Treino IA!");
-        return;
-      }
+    function resetConnectionState() {
+      document.getElementById('status-badge').className = "px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 flex items-center gap-2";
+      document.getElementById('status-badge').innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-400"></span> DESCONECTADO`;
+      conn = null;
+    }
 
-      if (currentTurn !== myPlayerId) {
-        showToast("Aguarde a jogada do oponente!");
-        return;
-      }
+    function showError(msg) {
+      const errBox = document.getElementById('error-alert');
+      document.getElementById('error-alert-msg').innerText = msg;
+      errBox.classList.remove('hidden');
+      logBattle("ERRO: " + msg);
+    }
 
-      if (!hoveredHex) return;
+    function hideError() {
+      document.getElementById('error-alert').classList.add('hidden');
+    }
 
-      // Validate core placement rules
-      if (!canPlaceCore(hoveredHex, myPlayerId)) {
-        showToast("Posição inválida! Deve ser em célula neutra conectada ao seu território.");
-        return;
-      }
-
-      executeTurnMove(hoveredHex.q, hoveredHex.r, selectedCoreType, myPlayerId);
-
-      // Broadcast move if P2P mode is active
-      if (conn && conn.open) {
-        conn.send({
-          type: 'MOVE',
-          q: hoveredHex.q,
-          r: hoveredHex.r,
-          coreType: selectedCoreType,
-          player: myPlayerId
-        });
-      }
-
-      if (isAIMode && gameState === 'PLAYING') {
-        setTimeout(triggerAIMove, 600);
-      }
+    function copyMyId() {
+      const idText = document.getElementById('my-id-display').innerText;
+      if (idText.includes("...")) return;
+      
+      const shareUrl = `${window.location.origin}${window.location.pathname}?join=${idText}`;
+      navigator.clipboard.writeText(shareUrl);
+      logBattle("Link direto de convite copiado para a área de transferência!");
+      playSound('click');
     }
 
     /* ==========================================================================
-       5. GAME TACTICAL RULES & DOMINANCE LOGIC
+       3. LÓGICA DO JOGO DA VELHA HEXAGONAL (TABULEIRO & CANVAS)
        ========================================================================== */
-    function canPlaceCore(hex, player) {
-      if (hex.owner !== 0) return false; // Must be neutral
-      
-      // Must be adjacent to a cell owned by player
-      const neighbors = getNeighbors(hex);
-      return neighbors.some(n => n.owner === player);
+    const canvas = document.getElementById('hex-canvas');
+    const ctx = canvas.getContext('2d');
+
+    const HEX_RADIUS = 36;
+    const BOARD_ROWS = 5;
+    const BOARD_COLS = 5;
+    let hexGrid = [];
+
+    // Estrutura da Célula Hexagonal
+    class HexCell {
+      constructor(q, r, x, y) {
+        this.q = q;
+        this.r = r;
+        this.x = x;
+        this.y = y;
+        this.owner = null; // null, 'p1', 'p2'
+        this.nodeType = null; // 'generator', 'shield', 'disruptor'
+        this.shielded = false;
+      }
     }
 
-    function executeTurnMove(q, r, coreType, player) {
-      const hex = board.find(h => h.q === q && h.r === r);
-      if (!hex) return;
+    function initBoard() {
+      hexGrid = [];
+      const originX = canvas.width / 2;
+      const originY = canvas.height / 2;
 
-      hex.owner = player;
-      hex.coreType = coreType;
-      hex.pulseAnim = 1.0;
+      for (let q = -2; q <= 2; q++) {
+        let r1 = Math.max(-2, -q - 2);
+        let r2 = Math.min(2, -q + 2);
+        for (let r = r1; r <= r2; r++) {
+          let x = originX + HEX_RADIUS * (Math.sqrt(3) * q + Math.sqrt(3)/2 * r);
+          let y = originY + HEX_RADIUS * (3/2 * r);
+          hexGrid.push(new HexCell(q, r, x, y));
+        }
+      }
 
-      sound.placeCore(coreType);
-      logEvent(`Jogador ${player === 1 ? 'CYAN' : 'MAGENTA'} implantou Nó [${coreType}] em (${q},${r}).`);
+      // Definir posições iniciais dos jogadores
+      const p1Start = hexGrid.find(h => h.q === -2 && h.r === 2);
+      const p2Start = hexGrid.find(h => h.q === 2 && h.r === -2);
 
-      // Trigger Core Ability Chain Effects
-      applyCoreEffects(hex, player);
+      if (p1Start) { p1Start.owner = 'p1'; p1Start.nodeType = 'generator'; }
+      if (p2Start) { p2Start.owner = 'p2'; p2Start.nodeType = 'generator'; }
 
-      // Check match victory or swap turn
+      drawBoard();
       updateScores();
-      if (!checkGameEnd()) {
-        switchTurn();
-      }
     }
 
-    function applyCoreEffects(placedHex, player) {
-      const neighbors = getNeighbors(placedHex);
-
-      if (placedHex.coreType === 'DISRUPTOR') {
-        // Disruptor converts adjacent unprotected neutral/enemy cores
-        neighbors.forEach(n => {
-          if (n.coreType !== 'SHIELD') {
-            n.owner = player;
-            n.pulseAnim = 0.8;
-          }
-        });
-        sound.surge();
-      } else if (placedHex.coreType === 'OVERDRIVE') {
-        // Overdrive expands ownership in radius 2 for unowned cells
-        neighbors.forEach(n => {
-          if (n.owner === 0) n.owner = player;
-          const subNeighbors = getNeighbors(n);
-          subNeighbors.forEach(sn => {
-            if (sn.owner === 0) sn.owner = player;
-          });
-        });
-        sound.surge();
-      }
-    }
-
-    function updateScores() {
-      let p1Score = 0, p2Score = 0;
-      let p1Cores = 0, p2Cores = 0;
-
-      board.forEach(h => {
-        if (h.owner === 1) {
-          p1Score += (h.coreType === 'ENERGY' ? 30 : 15);
-          if (h.coreType) p1Cores++;
-        } else if (h.owner === 2) {
-          p2Score += (h.coreType === 'ENERGY' ? 30 : 15);
-          if (h.coreType) p2Cores++;
-        }
-      });
-
-      document.getElementById('p1-score').innerText = `${p1Score} KB`;
-      document.getElementById('p2-score').innerText = `${p2Score} KB`;
-      document.getElementById('p1-cores').innerText = `${p1Cores} Cores`;
-      document.getElementById('p2-cores').innerText = `${p2Cores} Cores`;
-    }
-
-    function switchTurn() {
-      currentTurn = (currentTurn === 1) ? 2 : 1;
-      resetTimer();
-      updateHUDTurnIndicators();
-    }
-
-    function resetTimer() {
-      clearInterval(turnTimer);
-      timeLeft = 25;
-      document.getElementById('timer-sec').innerText = timeLeft;
-
-      turnTimer = setInterval(() => {
-        timeLeft--;
-        document.getElementById('timer-sec').innerText = timeLeft;
-        if (timeLeft <= 0) {
-          clearInterval(turnTimer);
-          logEvent(`Tempo esgotado para Jogador ${currentTurn}! Passando a vez.`);
-          switchTurn();
-          if (isAIMode && currentTurn === 2) {
-            triggerAIMove();
-          }
-        }
-      }, 1000);
-    }
-
-    function updateHUDTurnIndicators() {
-      const p1Ind = document.getElementById('p1-turn-indicator');
-      const p2Ind = document.getElementById('p2-turn-indicator');
-      const badge = document.getElementById('turn-badge');
-
-      if (currentTurn === 1) {
-        p1Ind.classList.remove('hidden');
-        p2Ind.classList.add('hidden');
-        badge.innerText = myPlayerId === 1 ? "SUA VEZ (CYAN)" : "TURNO DO OPONENTE";
-        badge.className = "px-4 py-1 rounded-full text-xs font-orbitron font-extrabold uppercase tracking-widest bg-cyan-950 border border-cyber-blue text-cyber-blue animate-pulse";
-      } else {
-        p1Ind.classList.add('hidden');
-        p2Ind.classList.remove('hidden');
-        badge.innerText = myPlayerId === 2 ? "SUA VEZ (MAGENTA)" : "TURNO DO OPONENTE";
-        badge.className = "px-4 py-1 rounded-full text-xs font-orbitron font-extrabold uppercase tracking-widest bg-pink-950 border border-cyber-magenta text-cyber-magenta animate-pulse";
-      }
-    }
-
-    function checkGameEnd() {
-      const neutralCells = board.filter(h => h.owner === 0);
-      const p1Cells = board.filter(h => h.owner === 1).length;
-      const p2Cells = board.filter(h => h.owner === 2).length;
-
-      // Board is fully claimed or no legal moves
-      if (neutralCells.length === 0 || p1Cells === 0 || p2Cells === 0) {
-        gameState = 'GAMEOVER';
-        clearInterval(turnTimer);
-
-        let winnerMsg = "";
-        if (p1Cells > p2Cells) {
-          winnerMsg = myPlayerId === 1 ? "VITÓRIA SOBERANA!" : "DERROTA QUANTUM!";
-          if (myPlayerId === 1) sound.win(); else sound.lose();
-        } else if (p2Cells > p1Cells) {
-          winnerMsg = myPlayerId === 2 ? "VITÓRIA SOBERANA!" : "DERROTA QUANTUM!";
-          if (myPlayerId === 2) sound.win(); else sound.lose();
-        } else {
-          winnerMsg = "EMPATE TÁTICO!";
-        }
-
-        document.getElementById('banner-title').innerText = winnerMsg;
-        document.getElementById('banner-desc').innerText = `Placar Final: CYAN ${p1Cells} Hexes vs MAGENTA ${p2Cells} Hexes.`;
-        document.getElementById('banner-overlay').classList.remove('hidden');
-        return true;
-      }
-      return false;
-    }
-
-    /* ==========================================================================
-       6. HEURISTIC ARTIFICIAL INTELLIGENCE (PRACTICE MODE)
-       ========================================================================== */
-    function startAIMode() {
-      isAIMode = true;
-      myPlayerId = 1;
-      document.getElementById('p2-name').innerText = "BOT QUANTUM (IA)";
-      document.getElementById('p2-p2p-info')?.classList.add('hidden');
-      document.getElementById('p2p-input-group').classList.add('hidden');
-      
-      restartGame();
-      showToast("Modo Treino IA Ativado!");
-      logEvent("Modo Treino iniciado contra IA Tática.");
-    }
-
-    function triggerAIMove() {
-      if (gameState !== 'PLAYING' || currentTurn !== 2) return;
-
-      // Find all valid placements for AI (Player 2)
-      const validHexes = board.filter(h => canPlaceCore(h, 2));
-      if (validHexes.length === 0) {
-        switchTurn();
-        return;
-      }
-
-      // Pick best strategic move
-      let bestHex = validHexes[0];
-      let bestScore = -999;
-      const coreChoices = ['ENERGY', 'SHIELD', 'DISRUPTOR', 'OVERDRIVE'];
-      let bestCore = 'ENERGY';
-
-      validHexes.forEach(hex => {
-        const neighbors = getNeighbors(hex);
-        const enemyNeighbors = neighbors.filter(n => n.owner === 1).length;
-        const score = enemyNeighbors * 10 + Math.random() * 5;
-
-        if (score > bestScore) {
-          bestScore = score;
-          bestHex = hex;
-          bestCore = enemyNeighbors > 1 ? 'DISRUPTOR' : coreChoices[Math.floor(Math.random() * coreChoices.length)];
-        }
-      });
-
-      executeTurnMove(bestHex.q, bestHex.r, bestCore, 2);
-    }
-
-    /* ==========================================================================
-       7. RENDER LOOP (CANVAS ANIMATIONS & GRAPHICS)
-       ========================================================================== */
-    function renderLoop() {
+    function drawBoard() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
-
-      // Draw Connection Power Lines
-      board.forEach(hex => {
-        if (hex.owner !== 0) {
-          const p1 = hexToPixel(hex, centerX, centerY);
-          const neighbors = getNeighbors(hex);
-          neighbors.forEach(n => {
-            if (n.owner === hex.owner) {
-              const p2 = hexToPixel(n, centerX, centerY);
-              ctx.beginPath();
-              ctx.moveTo(p1.x, p1.y);
-              ctx.lineTo(p2.x, p2.y);
-              ctx.strokeStyle = hex.owner === 1 ? 'rgba(0, 240, 255, 0.35)' : 'rgba(255, 0, 127, 0.35)';
-              ctx.lineWidth = 3;
-              ctx.stroke();
-            }
-          });
-        }
+      hexGrid.forEach(cell => {
+        drawHexagon(cell.x, cell.y, HEX_RADIUS - 2, cell);
       });
-
-      // Draw Hexes
-      board.forEach(hex => {
-        const { x, y } = hexToPixel(hex, centerX, centerY);
-        const isHovered = (hoveredHex === hex);
-
-        drawHexagon(x, y, HEX_RADIUS - 2, hex, isHovered);
-      });
-
-      requestAnimationFrame(renderLoop);
     }
 
-    function drawHexagon(x, y, radius, hex, isHovered) {
+    function drawHexagon(x, y, radius, cell) {
       ctx.beginPath();
       for (let i = 0; i < 6; i++) {
-        const angle = (Math.PI / 3) * i - (Math.PI / 6);
+        const angle = (Math.PI / 180) * (60 * i + 30);
         const hx = x + radius * Math.cos(angle);
         const hy = y + radius * Math.sin(angle);
         if (i === 0) ctx.moveTo(hx, hy);
@@ -853,219 +470,262 @@
       }
       ctx.closePath();
 
-      // Fill style based on ownership
-      if (hex.owner === 1) {
-        ctx.fillStyle = isHovered ? 'rgba(0, 240, 255, 0.45)' : 'rgba(0, 240, 255, 0.2)';
+      // Preenchimento de Cor base no Dono
+      if (cell.owner === 'p1') {
+        ctx.fillStyle = 'rgba(0, 240, 255, 0.25)';
         ctx.strokeStyle = '#00f0ff';
-      } else if (hex.owner === 2) {
-        ctx.fillStyle = isHovered ? 'rgba(255, 0, 127, 0.45)' : 'rgba(255, 0, 127, 0.2)';
-        ctx.strokeStyle = '#ff007f';
+        ctx.lineWidth = 2;
+      } else if (cell.owner === 'p2') {
+        ctx.fillStyle = 'rgba(255, 0, 85, 0.25)';
+        ctx.strokeStyle = '#ff0055';
+        ctx.lineWidth = 2;
       } else {
-        ctx.fillStyle = isHovered ? 'rgba(56, 189, 248, 0.2)' : 'rgba(15, 23, 42, 0.6)';
-        ctx.strokeStyle = isHovered ? 'rgba(0, 240, 255, 0.6)' : 'rgba(56, 189, 248, 0.2)';
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.lineWidth = 1;
       }
 
-      ctx.lineWidth = isHovered ? 2.5 : 1.5;
       ctx.fill();
       ctx.stroke();
 
-      // Pulse Animation for newly placed nodes
-      if (hex.pulseAnim > 0) {
-        ctx.beginPath();
-        ctx.arc(x, y, radius * (1 + (1 - hex.pulseAnim)), 0, Math.PI * 2);
-        ctx.strokeStyle = hex.owner === 1 ? `rgba(0, 240, 255, ${hex.pulseAnim})` : `rgba(255, 0, 127, ${hex.pulseAnim})`;
-        ctx.stroke();
-        hex.pulseAnim -= 0.03;
-      }
-
-      // Core Icons Render
-      if (hex.coreType) {
-        ctx.fillStyle = hex.owner === 1 ? '#00f0ff' : '#ff007f';
-        ctx.font = '14px Orbitron, sans-serif';
+      // Ícones de Nós Especiais
+      if (cell.nodeType) {
+        ctx.font = '16px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-
-        let symbol = '⚡';
-        if (hex.coreType === 'SHIELD') symbol = '🛡️';
-        if (hex.coreType === 'DISRUPTOR') symbol = '☣️';
-        if (hex.coreType === 'OVERDRIVE') symbol = '⚛️';
-
-        ctx.fillText(symbol, x, y);
+        let icon = '⚡';
+        if (cell.nodeType === 'shield') icon = '🛡️';
+        if (cell.nodeType === 'disruptor') icon = '💥';
+        ctx.fillText(icon, x, y);
       }
     }
 
-    /* ==========================================================================
-       8. PEERJS P2P NETWORKING ENGINE
-       ========================================================================== */
-    function initPeerNetwork() {
-      myPeer = new Peer();
-
-      myPeer.on('open', (id) => {
-        document.getElementById('my-peer-id').innerText = id;
-        logEvent(`Conectado ao nó PeerJS. Seu ID: ${id}`);
-      });
-
-      myPeer.on('connection', (c) => {
-        if (conn) {
-          c.close();
-          return;
-        }
-        conn = c;
-        myPlayerId = 1; // Host is P1
-        isAIMode = false;
-        setupConnectionHandlers();
-        logEvent("Oponente conectado via WebRTC P2P!");
-        showToast("Oponente Conectado!");
-        document.getElementById('p2-name').innerText = "OPONENTE P2P";
-        restartGame();
-      });
-
-      myPeer.on('error', (err) => {
-        showToast("Erro P2P: " + err.type);
-      });
-    }
-
-    function connectToPeer() {
-      const targetId = document.getElementById('target-peer-id').value.trim();
-      if (!targetId) {
-        showToast("Insira um ID de oponente válido!");
+    // Clique no Canvas
+    canvas.addEventListener('click', (e) => {
+      if (!isMyTurn) {
+        logBattle("Aguarde a sua vez de jogar!");
         return;
       }
 
-      logEvent(`Conectando ao nó ${targetId}...`);
-      conn = myPeer.connect(targetId);
-      myPlayerId = 2; // Guest is P2
-      isAIMode = false;
-      document.getElementById('p2-name').innerText = "CYBER-HOST";
-      setupConnectionHandlers();
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      // Encontrar Célula Clicada
+      const clickedCell = hexGrid.find(cell => {
+        const dist = Math.hypot(cell.x - clickX, cell.y - clickY);
+        return dist < HEX_RADIUS - 2;
+      });
+
+      if (clickedCell) {
+        executeMove(clickedCell, myRole, selectedNodeType);
+      }
+    });
+
+    function executeMove(cell, player, nodeType) {
+      // Regra: Não pode jogar em célula já dominada por você mesmo
+      if (cell.owner === player) return;
+
+      // Regra: Deve ser adjacente a pelo menos uma célula dominada por você
+      const neighbors = getNeighbors(cell);
+      const hasAdjacent = neighbors.some(n => n.owner === player);
+
+      if (!hasAdjacent) {
+        logBattle("Jogada inválida! Você só pode expandir para hexágonos vizinhos.");
+        return;
+      }
+
+      // Executar a jogada
+      cell.owner = player;
+      cell.nodeType = nodeType;
+      playSound('place');
+
+      // Processar Habilidades de Nós
+      if (nodeType === 'generator') {
+        // Converte vizinhos vazios sem dono
+        neighbors.forEach(n => {
+          if (!n.owner) {
+            n.owner = player;
+            playSound('capture');
+          }
+        });
+      } else if (nodeType === 'disruptor') {
+        // Limpa o nó dos vizinhos inimigos
+        neighbors.forEach(n => {
+          if (n.owner && n.owner !== player) {
+            n.owner = null;
+            n.nodeType = null;
+          }
+        });
+      }
+
+      drawBoard();
+      updateScores();
+      checkWinCondition();
+
+      // Transmitir Jogada via P2P
+      if (conn && conn.open) {
+        conn.send({
+          type: 'MOVE',
+          q: cell.q,
+          r: cell.r,
+          nodeType: nodeType,
+          player: player
+        });
+      }
+
+      // Alternar Turno
+      isMyTurn = false;
+      updateTurnBanner();
+
+      // Se for jogo contra IA e o jogador acabou de jogar
+      if (isAiGame && !isMyTurn) {
+        setTimeout(playAiTurn, 600);
+      }
     }
 
-    function setupConnectionHandlers() {
-      document.getElementById('p2p-input-group').classList.add('hidden');
-      document.getElementById('ai-mode-btn').classList.add('hidden');
+    function handlePeerData(data) {
+      if (data.type === 'MOVE') {
+        const cell = hexGrid.find(h => h.q === data.q && h.r === data.r);
+        if (cell) {
+          cell.owner = data.player;
+          cell.nodeType = data.nodeType;
 
-      conn.on('open', () => {
-        logEvent("Conexão P2P estabelecida com sucesso!");
-        showToast("Conectado ao Oponente!");
-        restartGame();
-      });
+          const neighbors = getNeighbors(cell);
+          if (data.nodeType === 'generator') {
+            neighbors.forEach(n => { if (!n.owner) n.owner = data.player; });
+          } else if (data.nodeType === 'disruptor') {
+            neighbors.forEach(n => { if (n.owner && n.owner !== data.player) { n.owner = null; n.nodeType = null; } });
+          }
 
-      conn.on('data', (data) => {
-        if (data.type === 'MOVE') {
-          executeTurnMove(data.q, data.r, data.coreType, data.player);
-        } else if (data.type === 'CHAT') {
-          logEvent(`[OPONENTE]: ${data.msg}`);
-        } else if (data.type === 'PING') {
-          sound.surge();
-          showToast("Oponente enviou Radar Ping!");
-        } else if (data.type === 'RESTART') {
-          restartGame(false);
+          drawBoard();
+          updateScores();
+          checkWinCondition();
+
+          isMyTurn = true;
+          updateTurnBanner();
+          playSound('place');
+          logBattle("Oponente realizou uma jogada!");
         }
-      });
+      }
+    }
 
-      conn.on('close', () => {
-        showToast("Oponente desconectou!");
-        logEvent("A conexão P2P foi encerrada.");
+    function getNeighbors(cell) {
+      const directions = [
+        {q: +1, r: 0}, {q: +1, r: -1}, {q: 0, r: -1},
+        {q: -1, r: 0}, {q: -1, r: +1}, {q: 0, r: +1}
+      ];
+      return directions.map(d => hexGrid.find(h => h.q === cell.q + d.q && h.r === cell.r + d.r)).filter(Boolean);
+    }
+
+    function updateScores() {
+      const p1Score = hexGrid.filter(h => h.owner === 'p1').length;
+      const p2Score = hexGrid.filter(h => h.owner === 'p2').length;
+
+      document.getElementById('p1-score').innerText = p1Score;
+      document.getElementById('p2-score').innerText = p2Score;
+    }
+
+    function checkWinCondition() {
+      const p1Score = hexGrid.filter(h => h.owner === 'p1').length;
+      const p2Score = hexGrid.filter(h => h.owner === 'p2').length;
+      const emptyCells = hexGrid.filter(h => !h.owner).length;
+
+      if (emptyCells === 0 || p1Score === 0 || p2Score === 0) {
+        let winner = p1Score > p2Score ? "Jogador 1 (Azul)" : "Jogador 2 (Rosa)";
+        if (p1Score === p2Score) winner = "Empate!";
+        
+        playSound('win');
+        logBattle(`FIM DE JOGO! Vitória de: ${winner}`);
+        alert(`FIM DE JOGO!\nResultado: ${winner}`);
+      }
+    }
+
+    function updateTurnBanner() {
+      const banner = document.getElementById('turn-banner');
+      if (isMyTurn) {
+        banner.innerText = "SUA VEZ DE JOGAR";
+        banner.className = "mb-3 px-6 py-1.5 rounded-full glass-panel border border-cyan-500/40 text-center font-orbitron font-bold text-sm tracking-wider text-cyan-300 shadow-lg shadow-cyan-500/20";
+      } else {
+        banner.innerText = "VEZ DO OPONENTE...";
+        banner.className = "mb-3 px-6 py-1.5 rounded-full glass-panel border border-fuchsia-500/40 text-center font-orbitron font-bold text-sm tracking-wider text-fuchsia-300 shadow-lg shadow-fuchsia-500/20";
+      }
+    }
+
+    function selectNodeType(type) {
+      selectedNodeType = type;
+      document.querySelectorAll('.node-select-btn').forEach(btn => {
+        btn.className = "node-select-btn px-3 py-1.5 rounded-lg text-xs font-orbitron flex items-center gap-1.5 bg-slate-800 text-slate-400 border border-slate-700";
       });
+      
+      const activeBtn = document.getElementById(`btn-node-${type}`);
+      activeBtn.className = "node-select-btn active px-3 py-1.5 rounded-lg text-xs font-orbitron flex items-center gap-1.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/50";
+      playSound('click');
+    }
+
+    function logBattle(msg) {
+      document.getElementById('battle-log').innerText = msg;
     }
 
     /* ==========================================================================
-       9. UI INTERACTION HELPERS & UTILITIES
+       4. MODO OFFLINE CONTRA INTELIGÊNCIA ARTIFICIAL (IA)
        ========================================================================== */
-    function selectCoreType(type) {
-      sound.click();
-      selectedCoreType = type;
-      ['ENERGY', 'SHIELD', 'DISRUPTOR', 'OVERDRIVE'].forEach(t => {
-        const btn = document.getElementById(`core-btn-${t}`);
-        if (t === type) {
-          btn.className = "core-card p-3 rounded-lg bg-slate-900/90 border-2 border-cyber-blue text-left transition relative overflow-hidden group cyber-glow-blue";
-        } else {
-          btn.className = "core-card p-3 rounded-lg bg-slate-900/60 border border-slate-700 text-left transition hover:border-cyan-500 relative overflow-hidden group";
-        }
+    function startAiGame() {
+      isAiGame = true;
+      myRole = 'p1';
+      isMyTurn = true;
+
+      document.getElementById('p2-name').innerText = "IA Tática Bot";
+      document.getElementById('status-badge').className = "px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/30 flex items-center gap-2";
+      document.getElementById('status-badge').innerHTML = `<span class="w-2 h-2 rounded-full bg-purple-400"></span> MODO IA OFFLINE`;
+
+      logBattle("Partida contra a IA Tática iniciada. Faça a sua jogada.");
+      updateTurnBanner();
+    }
+
+    function playAiTurn() {
+      if (!isAiGame || isMyTurn) return;
+
+      // Encontrar todas as células válidas para a IA (adjacentes às células da IA = 'p2')
+      const validCells = hexGrid.filter(cell => {
+        if (cell.owner === 'p2') return false;
+        const neighbors = getNeighbors(cell);
+        return neighbors.some(n => n.owner === 'p2');
       });
-    }
 
-    function restartGame(broadcast = true) {
-      board = generateHexGrid(GRID_RINGS);
-      
-      const centerP1 = board.find(h => h.q === -GRID_RINGS && h.r === 0);
-      const centerP2 = board.find(h => h.q === GRID_RINGS && h.r === 0);
-      if (centerP1) { centerP1.owner = 1; centerP1.coreType = 'ENERGY'; }
-      if (centerP2) { centerP2.owner = 2; centerP2.coreType = 'ENERGY'; }
+      if (validCells.length > 0) {
+        // Escolher uma célula aleatória e um nó tático
+        const targetCell = validCells[Math.floor(Math.random() * validCells.length)];
+        const types = ['generator', 'shield', 'disruptor'];
+        const randomType = types[Math.floor(Math.random() * types.length)];
 
-      gameState = 'PLAYING';
-      currentTurn = 1;
-      updateScores();
-      resetTimer();
-      updateHUDTurnIndicators();
+        targetCell.owner = 'p2';
+        targetCell.nodeType = randomType;
 
-      document.getElementById('banner-overlay').classList.add('hidden');
-      document.getElementById('game-status-sub').innerText = "Em Partida";
+        const neighbors = getNeighbors(targetCell);
+        if (randomType === 'generator') {
+          neighbors.forEach(n => { if (!n.owner) n.owner = 'p2'; });
+        } else if (randomType === 'disruptor') {
+          neighbors.forEach(n => { if (n.owner && n.owner !== 'p2') { n.owner = null; n.nodeType = null; } });
+        }
 
-      logEvent("A partida foi iniciada/reiniciada.");
+        drawBoard();
+        updateScores();
+        checkWinCondition();
 
-      if (broadcast && conn && conn.open) {
-        conn.send({ type: 'RESTART' });
+        playSound('place');
+        logBattle("IA Tática realizou um movimento.");
       }
+
+      isMyTurn = true;
+      updateTurnBanner();
     }
 
-    function copyInviteLink() {
-      const peerId = myPeer ? myPeer.id : '';
-      if (!peerId) return;
-
-      const shareUrl = `${window.location.origin}${window.location.pathname}?join=${peerId}`;
-      
-      const dummy = document.createElement('input');
-      document.body.appendChild(dummy);
-      dummy.value = shareUrl;
-      dummy.select();
-      document.execCommand('copy');
-      document.body.removeChild(dummy);
-
-      showToast("Link de Convite P2P copiado!");
-    }
-
-    function pingBoard() {
-      sound.surge();
-      showToast("Radar Ping Enviado!");
-      if (conn && conn.open) {
-        conn.send({ type: 'PING' });
-      }
-    }
-
-    function sendChatMessage() {
-      const input = document.getElementById('chat-input');
-      const msg = input.value.trim();
-      if (!msg) return;
-
-      logEvent(`[VOCÊ]: ${msg}`);
-      if (conn && conn.open) {
-        conn.send({ type: 'CHAT', msg: msg });
-      }
-      input.value = '';
-    }
-
-    function logEvent(msg) {
-      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const feed = document.getElementById('event-feed');
-      const entry = document.createElement('div');
-      entry.className = "p-1 rounded bg-slate-900/50 border border-slate-800/80 text-slate-300";
-      entry.innerHTML = `<span class="text-cyber-blue font-mono">[${timeStr}]</span> ${msg}`;
-      feed.appendChild(entry);
-      feed.scrollTop = feed.scrollHeight;
-    }
-
-    function showToast(msg) {
-      const toast = document.getElementById('toast');
-      document.getElementById('toast-msg').innerText = msg;
-      toast.classList.remove('translate-y-20', 'opacity-0');
-      toast.classList.add('translate-y-0', 'opacity-100');
-
-      setTimeout(() => {
-        toast.classList.remove('translate-y-0', 'opacity-100');
-        toast.classList.add('translate-y-20', 'opacity-0');
-      }, 3000);
-    }
+    // Inicialização ao carregar a página
+    window.onload = () => {
+      initPeer();
+      initBoard();
+    };
   </script>
 </body>
 </html>
