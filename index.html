@@ -7,10 +7,10 @@
         body { margin: 0; overflow: hidden; background: #87CEEB; font-family: 'Courier New', Courier, monospace; }
         canvas { display: block; }
         #ui { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6); color: white; padding: 10px; border-radius: 5px; pointer-events: none; display: none; }
-        #resetBtn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px 40px; font-size: 20px; cursor: pointer; display: none; background: #333; color: white; border: 2px solid white; border-radius: 10px; pointer-events: auto; }
         #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: white; padding: 20px; border-radius: 10px; text-align: center; border: 2px solid white; }
         #menu button, #menu input { padding: 10px; font-size: 16px; margin: 5px; cursor: pointer; }
         #menu input { cursor: text; text-align: center; }
+        #endScreen { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); color: white; padding: 40px; border-radius: 10px; text-align: center; border: 2px solid white; font-size: 35px; font-weight: bold; display: none; pointer-events: none; z-index: 20; }
     </style>
 </head>
 <body>
@@ -18,13 +18,10 @@
     <h2>MICRO CRAFT SURVIVAL - P2P</h2>
     <div id="setupStep">
         <label>Quantidade de Jogadores:</label><br>
-        <button onclick="setMaxPlayers(2)">2 Jogadores</button>
-        <button onclick="setMaxPlayers(3)">3 Jogadores</button>
-        <button onclick="setMaxPlayers(4)">4 Jogadores</button>
-    </div>
-    <div id="roomStep" style="display:none;">
-        <p>Jogadores selecionados: <b id="maxPCount"></b></p>
-        <button onclick="createRoom()">Criar Sala</button><br><br>
+        <button onclick="createRoom(2)">2 Jogadores</button>
+        <button onclick="createRoom(3)">3 Jogadores</button>
+        <button onclick="createRoom(4)">4 Jogadores</button>
+        <br><br>
         OU<br><br>
         <input type="text" id="joinIdInput" placeholder="Cole o ID do Host"><br>
         <button onclick="joinRoom()">Entrar em Sala</button>
@@ -42,14 +39,13 @@
     Tempo p/ Eliminação: <span id="timer">30</span>s<br>
     <span id="invList"></span>
 </div>
-<button id="resetBtn" onclick="resetGame()">REINICIAR PARTIDA</button>
+<div id="endScreen"></div>
 <canvas id="c"></canvas>
 
 <script>
     const canvas = document.getElementById('c');
     const ctx = canvas.getContext('2d');
     const timerDisp = document.getElementById('timer');
-    const resetBtn = document.getElementById('resetBtn');
     
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -64,6 +60,7 @@
     let players = [];
     let startRow = 11;
     let dangerRowOffset = -3;
+    let restartCountdown = 0;
 
     let camX = canvas.width / 2;
     let camY = canvas.height / 2;
@@ -81,17 +78,11 @@
     const colors = ['#f00', '#00f', '#ff0', '#f0f'];
     const spawnPositions = [5, 30, 15, 20];
 
-    function setMaxPlayers(num) {
+    function createRoom(num) {
         maxPlayers = num;
-        document.getElementById('maxPCount').innerText = num;
-        document.getElementById('setupStep').style.display = 'none';
-        document.getElementById('roomStep').style.display = 'block';
-    }
-
-    function createRoom() {
         isHost = true;
         myIndex = 0;
-        document.getElementById('roomStep').style.display = 'none';
+        document.getElementById('setupStep').style.display = 'none';
         document.getElementById('statusStep').style.display = 'block';
         document.getElementById('statusMsg').innerText = "Gerando sala...";
 
@@ -129,7 +120,7 @@
         if(!hostId) return;
         isHost = false;
 
-        document.getElementById('roomStep').style.display = 'none';
+        document.getElementById('setupStep').style.display = 'none';
         document.getElementById('statusStep').style.display = 'block';
         document.getElementById('statusMsg').innerText = "Conectando à sala...";
 
@@ -168,7 +159,8 @@
         globalTimer = 30;
         shakeTimer = 0;
         eliminationPending = false;
-        resetBtn.style.display = 'none';
+        restartCountdown = 0;
+        document.getElementById('endScreen').style.display = 'none';
         startRow = 11;
         dangerRowOffset = -3;
 
@@ -245,9 +237,10 @@
                 shakeTimer = data.shakeTimer;
                 gameActive = data.gameActive;
                 fallingBlocks = data.fallingBlocks;
+                restartCountdown = data.restartCountdown;
                 timerDisp.innerText = globalTimer;
                 if (!gameActive) {
-                    checkVictoryUI();
+                    updateEndScreen();
                 }
                 players.forEach(p => {
                     let el = document.getElementById(`inv${p.id}`);
@@ -266,7 +259,7 @@
             startRow = data.startRow;
             dangerRowOffset = data.dangerRowOffset;
             gameActive = true;
-            resetBtn.style.display = 'none';
+            document.getElementById('endScreen').style.display = 'none';
             updateUIInv();
         }
     }
@@ -363,8 +356,29 @@
 
     window.oncontextmenu = e => e.preventDefault();
 
+    function updateEndScreen() {
+        if (myIndex === -1) return;
+        let p = players[myIndex];
+        let msg = (p && p.alive && !p.dying) ? "VOCÊ VENCEU!" : "VOCÊ PERDEU!";
+        let aliveCount = players.filter(pl => pl.alive && !pl.dying).length;
+        if (aliveCount === 0) msg = "EMPATE!";
+        
+        let countMsg = restartCountdown > 0 ? `<br><br><span style="font-size:24px; font-weight:normal;">Partida reiniciando em ${restartCountdown}...</span>` : "";
+        document.getElementById('endScreen').innerHTML = msg + countMsg;
+        document.getElementById('endScreen').style.display = 'block';
+    }
+
     setInterval(() => {
-        if (!gameActive || !isHost) return;
+        if (!isHost) return;
+        if (!gameActive) {
+            if (restartCountdown > 0) {
+                restartCountdown--;
+                updateEndScreen();
+                if (restartCountdown === 0) resetGame();
+            }
+            return;
+        }
+        
         globalTimer--;
         if (globalTimer <= 0) {
             shakeTimer = 40; 
@@ -407,13 +421,8 @@
         let alive = players.filter(p => p.alive && !p.dying);
         if (alive.length <= 1) {
             gameActive = false;
-            checkVictoryUI();
-        }
-    }
-
-    function checkVictoryUI() {
-        if (isHost) {
-            resetBtn.style.display = 'block';
+            restartCountdown = 5;
+            updateEndScreen();
         }
     }
 
@@ -421,6 +430,7 @@
         if (!isHost) return;
         initGameWorld();
         gameActive = true;
+        document.getElementById('endScreen').style.display = 'none';
         let payload = { type: 'reset', world, players, startRow, dangerRowOffset };
         connections.forEach(c => c.send(payload));
     }
@@ -525,7 +535,8 @@
             globalTimer,
             shakeTimer,
             gameActive,
-            fallingBlocks
+            fallingBlocks,
+            restartCountdown
         };
         connections.forEach(c => c.send(data));
         players.forEach(p => {
